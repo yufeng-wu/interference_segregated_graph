@@ -1,4 +1,6 @@
-# thesis
+# Williams College Computer Science Thesis
+
+Yufeng Wu
 
 questions to ask rohit:
 1. About deferring admission to PhD program
