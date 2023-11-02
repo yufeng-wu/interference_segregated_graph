@@ -10,6 +10,8 @@ References:
 '''
 
 from collections import deque
+import random
+from util import edges_to_graph, graph_to_edges
 
 def get_neighbors(graph, current_v, layer):
 	'''
@@ -38,7 +40,47 @@ def get_neighbors(graph, current_v, layer):
 	visited.remove(current_v)
 	return visited
 
-def maximal_n_apart_independent_set(graph, n, available_vertices):
+# def maximal_n_apart_independent_set(graph, n, available_vertices, approx):
+#     stack = [(None, available_vertices)]
+#     result = []
+
+#     while stack:
+#         current_v, available_vertices = stack.pop()
+
+#         if current_v is not None:
+#             neighbors = get_neighbors(graph, current_v, n)
+#             available_vertices_res1 = available_vertices.copy()
+#             for neighbor in neighbors:
+#                 available_vertices_res1.discard(neighbor)
+#             result_1 = [current_v] + stack[-1][1] if stack else []
+#             stack.append((None, available_vertices_res1))
+#             stack.append((current_v, stack[-1][1] if stack else []))
+#             stack.append((None, stack[-1][1] if stack else []))
+
+#             if approx:
+#                 options = ["both", "include", "exclude"]
+#                 v_count = len(graph.keys())
+#                 option = random.choices(options, weights=[v_count, v_count**(1.5), v_count**(1.5)])[0]
+
+#                 if option == "both":
+#                     continue
+#                 elif option == "include":
+#                     stack.pop()  # Discard the current_v from the stack
+#                 else:
+#                     stack.pop()  # Discard the current_v from the stack
+#                     continue
+#             else:
+#                 continue
+#         else:
+#             if len(available_vertices) == 0:
+#                 continue
+
+#             current_v = available_vertices.pop()
+#             stack.append((current_v, available_vertices))
+
+#     return result
+
+def maximal_n_apart_independent_set(graph, n, available_vertices, approx):
 	'''
 	Find the n-apart maximal indepdent set from a given graph using recursion.
 
@@ -62,24 +104,47 @@ def maximal_n_apart_independent_set(graph, n, available_vertices):
 	Time complexity: O(2^N) where N is the number of vertices in the graph.
 	'''
 
+	def case1():
+		# Case 1: include current_v in our maximal independent set
+		# Remove all layer-n neighbors of current_v from the available_vertices set
+		neighbors = get_neighbors(graph, current_v, n)
+		available_vertices_res1 = available_vertices.copy()
+		for neighbor in neighbors:
+			available_vertices_res1.discard(neighbor)
+		result_1 = [current_v] + maximal_n_apart_independent_set(graph, n, available_vertices_res1, approx)
+		return result_1
+	
+	def case2():
+		# Case 2: not include current_v in our maximal independent set
+		available_vertices_res2 = available_vertices.copy()
+		result_2 = maximal_n_apart_independent_set(graph, n, available_vertices_res2, approx)
+		return result_2
+
 	# Base Case
 	if len(available_vertices) == 0:
 		return []
 	
 	# Recursive Cases
 	current_v = available_vertices.pop() # pop a random vertex out of the available set, order not guaranteed
-	
-	# Case 1: include current_v in our maximal independent set
-	# Remove all layer-n neighbors of current_v from the available_vertices set
-	neighbors = get_neighbors(graph, current_v, n)
-	available_vertices_res1 = available_vertices.copy()
-	for neighbor in neighbors:
-		available_vertices_res1.discard(neighbor)
-	res1 = [current_v] + maximal_n_apart_independent_set(graph, n, available_vertices_res1)
 
-	# Case 2: not include current_v in our maximal independent set
-	available_vertices_res2 = available_vertices.copy()
-	res2 = maximal_n_apart_independent_set(graph, n, available_vertices_res2)
+	if approx:
+		options = ["both", "include", "exclude"]
+		v_count = len(graph.keys())
+		option = random.choices(options, weights=[v_count, v_count**(1.5), v_count**(1.5)])[0]
+		
+		if option == "both":
+			print(option)
+			res1 = case1()
+			res2 = case2()
+		elif option == "include":
+			res1 = case1()
+			res2 = []
+		else:
+			res1 = []
+			res2 = case2()
+	else:
+		res1 = case1()
+		res2 = case2()
 
 	# Our final result is the one that has more elements in it, return it
 	if len(res1) > len(res2):
@@ -97,62 +162,11 @@ def maximal_n_apart_independent_set(graph, n, available_vertices):
 # 	(8, 9),
 # 	(9, 1)]
 
-E = [(1, 2),
-	(1, 3),
-	(2, 4),
-	(5, 6),
-	(6, 7),
-	(4, 8)]
+if __name__ == '__main__':
+    # cycle_UG = create_cycle_UG(1000)
 
-graph = dict([])
-
-# Constructs Graph as a dictionary of the following format:
-# graph[Vertex V] = list[Neighbors of Vertex V]
-for i in range(len(E)):
-	v1, v2 = E[i]
-	
-	if(v1 not in graph):
-		graph[v1] = []
-	if(v2 not in graph):
-		graph[v2] = []
-	
-	graph[v1].append(v2)
-	graph[v2].append(v1)
-
-graph = {
-        0: [30, 1],
-        1: [0, 2],
-        2: [1, 3],
-        3: [2, 4],
-        4: [3, 5],
-        5: [4, 6],
-        6: [5, 7],
-        7: [6, 8],
-        8: [7, 9],
-        9: [8, 10],
-        10: [9, 11],
-        11: [10, 12],
-        12: [11, 13],
-        13: [12, 14],
-        14: [13, 15],
-        15: [14, 16],
-        16: [15, 17],
-        17: [16, 18],
-        18: [17, 19],
-        19: [18, 20],
-        20: [19, 21],
-        21: [20, 22],
-        22: [21, 23],
-        23: [22, 24],
-        24: [23, 25],
-        25: [24, 26],
-        26: [25, 27],
-        27: [26, 28],
-        28: [27, 29],
-        29: [28, 30],
-        30: [29, 0]
-    }
-
-n = 5
-res = maximal_n_apart_independent_set(graph, n, set(graph.keys()))
-print("Maximal ", n, "-apart independent set: ", res)
+    # n = 5
+    # result = maximal_n_apart_independent_set(cycle_UG, n, set(cycle_UG.keys()), approx=True)
+    # print("Maximal ", n, "-apart independent set: ", result)
+    # print("Length: ", len(result))
+    # print("Best possible length: ", len(cycle_UG.keys())//6)
