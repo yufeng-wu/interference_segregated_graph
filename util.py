@@ -53,3 +53,34 @@ def graph_to_edges(graph):
             
     # Convert to a list before returning
     return list(edges)
+
+def bron_kerbosch_all_cliques(R, P, X, graph, cliques):
+    # Report the current set R as a clique
+    if R:
+        cliques.append(R)
+    for v in list(P):
+        new_R = R.union({v})
+        new_P = P.intersection(graph[v])
+        new_X = X.intersection(graph[v])
+        bron_kerbosch_all_cliques(new_R, new_P, new_X, graph, cliques)
+        P.remove(v)
+        X.add(v)
+
+def find_cliques(graph):
+    '''
+    Find all cliques in the given graph.
+    '''
+    cliques = []
+    P = set(graph.keys())
+    R = set()
+    X = set()
+    bron_kerbosch_all_cliques(R, P, X, graph, cliques)
+    return cliques
+
+def print_cliques(cliques):
+    cliques_by_size = defaultdict(list)
+    for clique in cliques:
+        cliques_by_size[len(clique)].append(clique)
+    for size in cliques_by_size.keys():
+        print(len(cliques_by_size[size]), "cliques of size", size, ": ")
+        print(cliques_by_size[size])

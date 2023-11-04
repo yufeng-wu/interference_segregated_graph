@@ -98,8 +98,8 @@ def maximal_n_apart_independent_set(graph, n, available_vertices, approx):
 	 			each pair of vertices in the maximal independent set 
 	 - available_vertices (set): the set of vertices that are still avaiable to 
 	 							 choose from to form the indepdent set. 
-								 This field should be set to graph.keys() by the 
-								 caller when this func is called for the first time.
+								 This field should be set to set(graph.keys()) 
+								 when this func is called for the first time.
 
 	Time complexity: O(2^N) where N is the number of vertices in the graph.
 	'''
@@ -133,7 +133,6 @@ def maximal_n_apart_independent_set(graph, n, available_vertices, approx):
 		option = random.choices(options, weights=[v_count, v_count**(1.5), v_count**(1.5)])[0]
 		
 		if option == "both":
-			print(option)
 			res1 = case1()
 			res2 = case2()
 		elif option == "include":
@@ -170,3 +169,4 @@ if __name__ == '__main__':
     # print("Maximal ", n, "-apart independent set: ", result)
     # print("Length: ", len(result))
     # print("Best possible length: ", len(cycle_UG.keys())//6)
+    pass
