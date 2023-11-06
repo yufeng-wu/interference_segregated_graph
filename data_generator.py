@@ -5,7 +5,8 @@ This code:
 2. samples a single realization of a given bidirected graph
 '''
 
-from util import edges_to_graph, find_cliques
+from util import edges_to_graph
+import matplotlib.pyplot as plt 
 import numpy as np
 import random
 
@@ -77,16 +78,19 @@ def sample_from_UG(graph, prob_v_given_neighbors, verbose=False, burn_in=1000):
     # Initialize vertices with random values chosen from V_DOMAIN
     v_values = {vertex: random.choice(V_DOMAIN) for vertex in graph.keys()}
 
+    # List to store samples for a particular node, say node 0
+    # node_0_samples = []
+
     # Gibbs sampling
     for i in range(burn_in):
-        if verbose and (i % 100 == 0):
+        if verbose and (i % 2 == 0):
             print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
         for v in graph.keys():
             v_neighbors = graph[v] # returns a list
             v_neighbor_values = [v_values[neighbor] for neighbor in v_neighbors]
 
             # P(V = 1 | nb(V))
-            p = prob_v_given_neighbors(v_neighbor_values)
+            p = prob_v_given_neighbors(data={"V_nb_values":v_neighbor_values})
 
             # always interpret of p as P(V=1 | Y=y).
             if v_values[v] == 0:
@@ -94,6 +98,16 @@ def sample_from_UG(graph, prob_v_given_neighbors, verbose=False, burn_in=1000):
 
             # sample a new value for the current node based on conditional proba
             v_values[v] = np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
+        
+        # Store the value of node 0 at this iteration
+        # node_0_samples.append(v_values[0])
+    
+     # Now plot the samples of node 0 to inspect burn-in
+    # plt.plot(range(burn_in), node_0_samples)
+    # plt.xlabel('Iteration')
+    # plt.ylabel('Value of Node 0')
+    # plt.title('Samples of Node 0 across burn-in iterations')
+    # plt.show()
 
     return v_values
 

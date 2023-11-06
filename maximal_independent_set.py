@@ -11,7 +11,6 @@ References:
 
 from collections import deque
 import random
-from util import edges_to_graph, graph_to_edges
 
 def get_neighbors(graph, current_v, layer):
 	'''
@@ -80,7 +79,8 @@ def get_neighbors(graph, current_v, layer):
 
 #     return result
 
-def maximal_n_apart_independent_set(graph, n, available_vertices, approx):
+def maximal_n_apart_independent_set(graph, n, available_vertices, 
+									approx, is_cycle_graph=False):
 	'''
 	Find the n-apart maximal indepdent set from a given graph using recursion.
 
@@ -103,6 +103,14 @@ def maximal_n_apart_independent_set(graph, n, available_vertices, approx):
 
 	Time complexity: O(2^N) where N is the number of vertices in the graph.
 	'''
+
+	# Short-cut to improve computational efficiency
+	if is_cycle_graph:
+		res = []
+		for i in range(0, len(graph)-n):
+			if i % (n + 1) == 0:
+				res.append(i)
+		return res
 
 	def case1():
 		# Case 1: include current_v in our maximal independent set
