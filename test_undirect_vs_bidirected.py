@@ -192,7 +192,7 @@ if __name__ == "__main__":
     sample_UG = sample_from_UG(graph=graph, 
                                prob_v_given_neighbors=prob_v_given_neighbors,
                                verbose=True,
-                               burn_in=100)
+                               burn_in=500)
     # print(sample_UG)
     
     ''' STEP 3: Generate data assuming that the edges are bidirected ''' 
