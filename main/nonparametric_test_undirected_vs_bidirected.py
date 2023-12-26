@@ -23,10 +23,30 @@ def f(U_values):
     Define the function f that calculates V based on its neighboring U values
     and returns a binary value.
     '''
-    # noise = np.random.normal(0, 0.1)
-    linear_sum = 20*sum(U_values) # + noise
+    noise = np.random.normal(0, 1)
+    linear_sum = 5*sum(U_values) + noise
     prob = expit(linear_sum)  # Sigmoid function to get a value between 0 and 1
     return np.random.binomial(1, prob)  # Sample from a Bernoulli distribution
+
+def prob_v_given_neighbors(data, params=[0.25, 0.3]):
+    '''
+    Define the parametric form for the conditional probability P(V_i = 1 | -V_i)
+    using only the V_neighbors as input. V_i is a binary variable that is either
+    0 or 1. The parameters a0 and a1 are hard-coded inside the function.
+
+    Params:
+        - V_neighbors: array-like, containing the values of V's neighbors
+    
+    Return:
+        - a float that represents the conditional probability
+    '''
+    # Parameters can be hard-coded or defined as constants elsewhere
+    a0 = params[0]
+    a1 = params[1]
+
+    V_nb_values = data["V_nb_values"]
+
+    return expit(a0 + a1 * np.sum(V_nb_values))
 
 def prepare_data(dataset, ind_set, graph):
     '''
@@ -118,17 +138,20 @@ if __name__ == "__main__":
 
 
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 200000
-    BURN_IN_PERIOD = 200
+    NUM_OF_VERTICES = 10000
+    UG_BURN_IN_PERIOD = 300
+    BOOTSTRAP_ITER = 200
 
+    # TODO: next step -- create a random graph
     graph = create_cycle_graph(NUM_OF_VERTICES)
 
 
     ''' STEP 2: Create data '''
-    sample_BG = sample_from_BG(edges=graph_to_edges(graph), 
+    sample = sample_from_BG(edges=graph_to_edges(graph), 
                                U_dist=U_dist, 
                                f=f)
-
+    
+    sample = sample_from_UG(graph, prob_v_given_neighbors, verbose=True, burn_in=UG_BURN_IN_PERIOD)
 
     ''' STEP 3: Create and prepare data '''
     ind_set = maximal_n_apart_independent_set(graph, 
@@ -136,7 +159,7 @@ if __name__ == "__main__":
                                           available_vertices=set(graph.keys()),
                                           approx=True,
                                           is_cycle_graph=True)
-    df = prepare_data(sample_BG, ind_set, graph)
+    df = prepare_data(sample, ind_set, graph)
     y = pd.DataFrame(df['value'])
     X = df.drop(['value', 'id'], axis=1)
 
@@ -145,4 +168,7 @@ if __name__ == "__main__":
     null_predictors = ['count_nb_value_is_1', 'count_nb_value_is_0']
     alt_predictors = ['count_nb_value_is_1', 'count_nb_value_is_0', 
                       'count_nbnb_value_is_1', 'count_nbnb_value_is_0']
-    print(nonparametric_test(X, y, null_predictors=null_predictors, alt_predictors=alt_predictors))
+    print(nonparametric_test(X, y, 
+                             null_predictors=null_predictors, 
+                             alt_predictors=alt_predictors,
+                             bootstrap_iter=BOOTSTRAP_ITER))
