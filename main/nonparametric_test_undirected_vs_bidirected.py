@@ -1,30 +1,27 @@
-from util import create_cycle_graph, graph_to_edges
+from util import create_cycle_graph, graph_to_edges, create_random_graph
 from data_generator import sample_from_BG, sample_from_UG
 from maximal_independent_set import maximal_n_apart_independent_set
 from scipy.special import expit
-from scipy.optimize import minimize
-from scipy.stats import chi2
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import sys
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
+import warnings
 
 def U_dist():
     '''
     Define the distribution: U ~ U_dist.
     '''
-    return np.random.normal(-0.2, 1)
+    return np.random.normal(0, 1)
 
 def f(U_values):
     '''
     Define the function f that calculates V based on its neighboring U values
     and returns a binary value.
     '''
-    noise = np.random.normal(0, 1)
-    linear_sum = 5*sum(U_values) + noise
+    noise = np.random.normal(0, 0.1)
+    linear_sum = 17 * sum(U_values) + noise
     prob = expit(linear_sum)  # Sigmoid function to get a value between 0 and 1
     return np.random.binomial(1, prob)  # Sample from a Bernoulli distribution
 
@@ -60,9 +57,8 @@ def prepare_data(dataset, ind_set, graph):
     '''
     
     df = pd.DataFrame(columns=['id', 'value', 
-                               'count_nb_value_is_1', 'count_nb_value_is_0', 'avg_nb_value', 
-                               'count_nbnb_value_is_1', 'count_nbnb_value_is_0', 'avg_nbnb_value'
-                              ])
+                               'count_nb_value_is_1', 'count_nb_value_is_0',
+                               'count_nbnb_value_is_1', 'count_nbnb_value_is_0'])
     
     for node in ind_set:
         # create a list to store the values of node's neighbors
@@ -83,46 +79,91 @@ def prepare_data(dataset, ind_set, graph):
                          'value':dataset[node], 
                          'count_nb_value_is_1':sum(nb_values),
                          'count_nb_value_is_0':len(nb_values) - sum(nb_values),
-                         'avg_nb_value':sum(nb_values)/len(nb_values),
                          'count_nbnb_value_is_1':sum(nbnb_values),
-                         'count_nbnb_value_is_0':len(nbnb_values) - sum(nbnb_values),
-                         'avg_nbnb_value':sum(nbnb_values)/len(nbnb_values)
-                        })
+                         'count_nbnb_value_is_0':len(nbnb_values) - sum(nbnb_values)})
         df = df.append(row, ignore_index=True)
     
     return df
 
-def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=42):
+
+
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import accuracy_score
+import numpy as np
+
+def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=0):
     '''
-    Using random forest classifier to train a null model using null_predictors and 
-    an alternative model using alt_predictors. Return the test accuracy of alternative
-    model minus that of the null model.
+    Using random forest classifier with grid search for parameter tuning to 
+    train a null model using null_predictors and an alternative model using 
+    alt_predictors. 
+    
+    Return the test accuracy of alternative model minus that of the null model.
     '''
     # prepare training and testing set
+    y = y.astype(int)
     X_train, X_test, y_train, y_test = train_test_split(X, np.ravel(y), test_size=test_size, random_state=random_state)
-    
+
+    # Define the parameter grid
+    param_grid = {
+        'n_estimators': [100, 500],
+        'max_depth': [None, 20],
+        'min_samples_split': [2, 5]
+    }
+
+    # Instantiate the grid search model
+    grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv=3, n_jobs=-1)
+
     # train and test null model
-    model_null = RandomForestClassifier()
-    model_null.fit(X_train[null_predictors], y_train)
-    y_pred = model_null.predict(X_test[null_predictors])
+    grid_search.fit(X_train[null_predictors], y_train)
+    best_null_model = grid_search.best_estimator_
+    y_pred = best_null_model.predict(X_test[null_predictors])
     accuracy_null = accuracy_score(y_test, y_pred)
     
     # train and test alternative model
-    model_alt = RandomForestClassifier()
-    model_alt.fit(X_train[alt_predictors], y_train)
-    y_pred = model_alt.predict(X_test[alt_predictors])
+    grid_search.fit(X_train[alt_predictors], y_train)
+    best_alt_model = grid_search.best_estimator_
+    y_pred = best_alt_model.predict(X_test[alt_predictors])
     accuracy_alt = accuracy_score(y_test, y_pred)
     
+    print(accuracy_alt - accuracy_null)
     return accuracy_alt - accuracy_null
+
+
+
+# def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=0):
+#     '''
+#     Using random forest classifier to train a null model using null_predictors and 
+#     an alternative model using alt_predictors. Return the test accuracy of alternative
+#     model minus that of the null model.
+#     '''
+#     # prepare training and testing set
+#     y = y.astype(int)
+#     X_train, X_test, y_train, y_test = train_test_split(X, np.ravel(y), test_size=test_size, random_state=random_state)
+
+#     # train and test null model
+#     model_null = RandomForestClassifier(n_estimators=1000, max_depth=100)
+#     model_null.fit(X_train[null_predictors], y_train)
+#     y_pred = model_null.predict(X_test[null_predictors])
+#     accuracy_null = accuracy_score(y_test, y_pred)
+    
+#     # train and test alternative model
+#     model_alt = RandomForestClassifier(n_estimators=1000, max_depth=100)
+#     model_alt.fit(X_train[alt_predictors], y_train)
+#     y_pred = model_alt.predict(X_test[alt_predictors])
+#     accuracy_alt = accuracy_score(y_test, y_pred)
+    
+#     return accuracy_alt - accuracy_null
 
 def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5):
     diff_test_accuracies = []
+    combined = pd.concat([X, y], axis=1)
     
     for i in range(bootstrap_iter):
         if i % 10 == 0:
             print(i)
         # bootstrap (sample w replacement) a new dataset from the original X, y
-        combined = pd.concat([X, y], axis=1)
         bootstrapped_combined = combined.sample(n=len(combined), replace=True, random_state=i)
 
         bootstrapped_X = bootstrapped_combined[X.columns]
@@ -136,39 +177,42 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100
 
 if __name__ == "__main__":
 
+    # sys.setrecursionlimit(4000)
+    warnings.filterwarnings('ignore')
 
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 10000
-    UG_BURN_IN_PERIOD = 300
+    NUM_OF_VERTICES = 800000
+    UG_BURN_IN_PERIOD = 100
     BOOTSTRAP_ITER = 200
 
-    # TODO: next step -- create a random graph
-    graph = create_cycle_graph(NUM_OF_VERTICES)
-
+    # graph = create_cycle_graph(NUM_OF_VERTICES)
+    graph = create_random_graph(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=8)
 
     ''' STEP 2: Create data '''
-    sample = sample_from_BG(edges=graph_to_edges(graph), 
-                               U_dist=U_dist, 
-                               f=f)
+    sample = sample_from_BG(graph=graph, U_dist=U_dist, f=f)
     
-    sample = sample_from_UG(graph, prob_v_given_neighbors, verbose=True, burn_in=UG_BURN_IN_PERIOD)
+    #sample = sample_from_UG(graph, prob_v_given_neighbors, verbose=True, burn_in=UG_BURN_IN_PERIOD)
 
     ''' STEP 3: Create and prepare data '''
-    ind_set = maximal_n_apart_independent_set(graph, 
-                                          n=5, 
-                                          available_vertices=set(graph.keys()),
-                                          approx=True,
-                                          is_cycle_graph=True)
+    ind_set = maximal_n_apart_independent_set(graph=graph, n=5, verbose=False)
+    print("Size of ind set: ", len(ind_set))
+
     df = prepare_data(sample, ind_set, graph)
+    print(df)
     y = pd.DataFrame(df['value'])
     X = df.drop(['value', 'id'], axis=1)
-
-
+    
     ''' STEP 4: Perform nonparametric test '''
     null_predictors = ['count_nb_value_is_1', 'count_nb_value_is_0']
     alt_predictors = ['count_nb_value_is_1', 'count_nb_value_is_0', 
                       'count_nbnb_value_is_1', 'count_nbnb_value_is_0']
-    print(nonparametric_test(X, y, 
+    lower, upper = nonparametric_test(X, y, 
                              null_predictors=null_predictors, 
                              alt_predictors=alt_predictors,
-                             bootstrap_iter=BOOTSTRAP_ITER))
+                             bootstrap_iter=BOOTSTRAP_ITER)
+    print("Lower: ", lower)
+    print("Upper: ", upper)
+    if lower <= 0 <= upper:
+        print("The data is generated from an undirected graph")
+    else:
+        print("The data is generated from a bidirected graph")

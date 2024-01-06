@@ -5,66 +5,114 @@ This code:
 2. samples a single realization of a given bidirected graph
 '''
 
-from util import edges_to_graph
+from util import create_random_graph, graph_to_edges
 import matplotlib.pyplot as plt 
+from scipy.special import expit
 import numpy as np
+import pandas as pd
 import random
 
-def sample_from_BG(edges, U_dist, f):
-    '''
-    Given a graph structure, sample a single realization by assuming that there
-    is an unobserved confounder, U, between each pair of connected vertices. 
+# def sample_from_BG(edges, U_dist, f):
+#     '''
+#     Given a graph structure, sample a single realization by assuming that there
+#     is an unobserved confounder, U, between each pair of connected vertices. 
 
-    The value of each U is sampled from U_dist.
+#     The value of each U is sampled from U_dist.
+
+#     Params:
+#         - edges list(tuple(int, int)): a list of edges; each tuple denotes an 
+#             edge between two vertices in the graph.
+#         - U_dist (callable): a function that returns a sample from the distribution
+#             of U when called.
+#         - f (callable): the function V = f(U_1, U_2, ..., U_n) + noise
+#             that takes a list of U values and returns a value V.  
+    
+#     Return:
+#         - sample (dict: int -> float): sample[vertex_i] = the value of vertex_i
+
+#     Assumptions:
+#         - the U's are realizations of the same distribution. (We have to assume this! otherwise misspecification.)
+#         - the V's are generated from the same parametric form.
+#     '''
+
+#     # Initialize a dictionary to hold the U values "at" each edge
+#     edge_to_U = {}
+
+#     for edge in edges:
+#         # sample a U value from U_dist
+#         U_value = U_dist()
+#         # save that in a map: each edge -> U value "associated with" that edge.
+#         edge_to_U[edge] = U_value
+
+#     # Initialize a dictionary to hold the V values for each vertex
+#     sample = {}
+
+#     graph = edges_to_graph(edges)
+
+#     # For each vertex, find all edges that involve this vertex
+#     for vertex in graph.keys():
+#         U_values = []
+#         for neighbor in graph[vertex]:
+#             try:
+#                 U_value = edge_to_U[(vertex, neighbor)]
+#             except: # try both orders
+#                 U_value = edge_to_U[(neighbor, vertex)]
+#             U_values.append(U_value)
+        
+#         # Calculate the value of V using the function f and add normally distributed noise
+#         V_value = f(U_values)
+        
+#         sample[vertex] = V_value
+
+#     return sample
+
+
+def sample_from_BG(network, sample, layer, U_dist, f):
+    '''
+    Modified function to sample from a Bidirected Graph (BG) considering layer-specific dependencies
+    and passing values into the function 'f' as a structured dictionary.
 
     Params:
-        - edges list(tuple(int, int)): a list of edges; each tuple denotes an 
-            edge between two vertices in the graph.
-        - U_dist (callable): a function that returns a sample from the distribution
-            of U when called.
-        - f (callable): the function V = f(U_1, U_2, ..., U_n) + noise
-            that takes a list of U values and returns a value V.  
-    
-    Return:
-        - sample (dict: int -> float): sample[vertex_i] = the value of vertex_i
+        - network (dict): Graph structure where the key is a node and the value is a list of its neighbors.
+        - sample (DataFrame): DataFrame containing the current samples of each node for previous layers.
+        - layer (str): The layer ('L', 'A', 'Y') currently being sampled.
+        - U_dist (callable): Function to sample the unobserved confounder U.
+        - f (callable): Function to calculate the value of a node given a structured dictionary of parents (pa(V)).
 
-    Assumptions:
-        - the U's are realizations of the same distribution. (We have to assume this! otherwise misspecification.)
-        - the V's are generated from the same parametric form.
+    Return:
+        - data (dict): Dictionary with the sampled values for each node in the specified layer.
     '''
 
-    # Initialize a dictionary to hold the U values "at" each edge
-    edge_to_U = {}
-
-    for edge in edges:
-        # sample a U value from U_dist
+    # Initialize a dictionary to hold the U values for each pair of connected vertices
+    pair_to_U = {}
+    for edge in graph_to_edges(network):
         U_value = U_dist()
-        # save that in a map: each edge -> U value "associated with" that edge.
-        edge_to_U[edge] = U_value
+        pair_to_U[edge] = U_value
 
-    # Initialize a dictionary to hold the V values for each vertex
-    sample = {}
+    data = {}
 
-    graph = edges_to_graph(edges)
+    for subject in network.keys():
+        pa_values = {
+            'U_values': [pair_to_U[tuple(sorted((subject, neighbor)))] for neighbor in network[subject]],
+            'L_self': None,
+            'A_self': None,
+            'L_neighbors': [],
+            'A_neighbors': []
+        }
 
-    # For each vertex, find all edges that involve this vertex
-    for vertex in graph.keys():
-        U_values = []
-        for neighbor in graph[vertex]:
-            try:
-                U_value = edge_to_U[(vertex, neighbor)]
-            except: # try both orders
-                U_value = edge_to_U[(neighbor, vertex)]
-            U_values.append(U_value)
+        if layer in ['A', 'Y']:
+            pa_values['L_self'] = sample.loc[subject, 'L']
+            pa_values['L_neighbors'] = [sample.loc[neighbor, 'L'] for neighbor in network[subject]]
         
-        # Calculate the value of V using the function f and add normally distributed noise
-        V_value = f(U_values)
-        
-        sample[vertex] = V_value
+        if layer == 'Y':
+            pa_values['A_self'] = sample.loc[subject, 'A']
+            pa_values['A_neighbors'] = [sample.loc[neighbor, 'A'] for neighbor in network[subject]]
 
-    return sample
+        data[subject] = f(pa_values)
 
-def sample_from_UG(graph, prob_v_given_neighbors, verbose=False, burn_in=1000):
+    return data
+
+def sample_from_UG(network, data, prob_v_given_boundary, verbose=False, burn_in=1000):
     '''
     Maybe we should just specify a cond_proba_v_given_all_else() function with set parameters, as long as it's consistent w/ the UG!
     
@@ -76,21 +124,20 @@ def sample_from_UG(graph, prob_v_given_neighbors, verbose=False, burn_in=1000):
     V_DOMAIN = [1, 0]
 
     # Initialize vertices with random values chosen from V_DOMAIN
-    v_values = {vertex: random.choice(V_DOMAIN) for vertex in graph.keys()}
+    v_values = {vertex: random.choice(V_DOMAIN) for vertex in network.keys()}
 
     # List to store samples for a particular node, say node 0
     # node_0_samples = []
 
     # Gibbs sampling
     for i in range(burn_in):
-        if verbose and (i % 100 == 0):
-            print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
-        for v in graph.keys():
-            v_neighbors = graph[v] # returns a list
+        print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
+        for v in network.keys():
+            v_neighbors = network[v] # returns a list
             v_neighbor_values = [v_values[neighbor] for neighbor in v_neighbors]
 
             # P(V = 1 | nb(V))
-            p = prob_v_given_neighbors(data={"V_nb_values":v_neighbor_values})
+            p = prob_v_given_boundary(data={"V_nb_values":v_neighbor_values})
 
             # always interpret of p as P(V=1 | Y=y).
             # if v_values[v] == 0:
@@ -105,5 +152,96 @@ def sample_from_UG(graph, prob_v_given_neighbors, verbose=False, burn_in=1000):
     return v_values
 
 
+def sample_L_A_Y(n_samples, network, edge_types):
+    '''
+    A function to draw n_samples samples from the joint distribution p(V) corresponding
+    to a graph specified by 
+    '''
+    valid_edge_types = {'B', 'U'}
+    assert len(edge_types) == 3 and all(edge_type in valid_edge_types for edge_type in edge_types.values()[0]), \
+           "edge_types must be a dictionary with three keys, each with values 'B' (Bidirected) or 'U' (Undirected)"
+
+    # List to store each sample as a DataFrame
+    samples = []
+
+    for _ in range(n_samples):
+        # Initialize DataFrame for the current sample
+        sample = pd.DataFrame(index=network.keys(), columns=['L', 'A', 'Y'])
+
+        # Sample each layer
+        for layer in ['L', 'A', 'Y']:
+            edge_type, args = edge_types[layer]
+            if edge_type == 'B':
+                sample[layer] = sample_from_BG(network=network, 
+                                               sample=sample, 
+                                               layer=layer, 
+                                               U_dist=args['U_dist'], 
+                                               f=args['f'])
+            elif edge_type == 'U':
+                sample[layer] = sample_from_UG(network=network,
+                                               sample=sample,
+                                               prob_v_given_boundary=args['prob_v_given_boundary'],
+                                               verbose=args['verbose'],
+                                               burn_in=args['burn_in'])
+
+        # Add the current sample DataFrame to the list
+        samples.append(sample)
+
+    return samples
+
 if __name__ == '__main__':
-    pass
+
+    def U_dist_1():
+        return np.random.normal(0, 1)
+    
+    def f_1(pa_values):
+        weighted_sum = 0
+        weights = {
+            'U_values': 0.5,
+            'L_self': 2,
+            'A_self': -2,
+            'L_neighbors': 1,
+            'A_neighbors': 3
+        }
+
+        for key, values in pa_values.items():
+            if values is not None:
+                if isinstance(values, list):
+                    weighted_sum += weights[key] * sum(values)
+                else:
+                    weighted_sum += weights[key] * values
+
+        prob = expit(weighted_sum)
+        return np.random.binomial(1, prob)  
+
+    def prob_v_given_boundary_1(diedge_values, unedge_values):
+        '''
+        Calculate the probability based on the values of variables with directed and undirected edges.
+
+        Params:
+            diedge_values (list): a list of values for variables that have directed edges into v.
+            unedge_values (list): a list of values for variables that have undirected edges connected with v.
+
+        Return:
+            float: Probability value between 0 and 1.
+        '''
+        temp = 3 * sum(diedge_values) + sum(unedge_values)
+        return expit(temp)
+    
+    def prob_v_given_boundary_2(diedge_values, unedge_values):
+        temp = 4 * sum(diedge_values) - 5 * sum(unedge_values)
+        return expit(temp)
+
+    NUM_OF_VERTICES = 100
+    VERBOSE = True
+    BURN_IN = 10
+
+    network = create_random_graph(n=NUM_OF_VERTICES, min_neighbors=0, max_neighbors=5)
+    # edge_types = {'L' : ['B', {'U_dist':U_dist_1, 'f':f_1}], 
+    #               'A' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
+    #               'Y' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    
+    # samples = sample_L_A_Y(n_samples=10, network=network, edge_types=edge_types)
+
+    s = sample_from_BG(network=network, sample={}, layer='L', U_dist=U_dist_1, f=f_1)
+    print(s)
