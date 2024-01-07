@@ -2,7 +2,7 @@ from collections import defaultdict
 import networkx as nx
 import random
 
-def create_random_graph(n, min_neighbors, max_neighbors):
+def create_random_network(n, min_neighbors, max_neighbors):
     # Ensure that the sum of the degree sequence is even
     while True:
         degree_sequence = [random.randint(min_neighbors, max_neighbors) for _ in range(n)]

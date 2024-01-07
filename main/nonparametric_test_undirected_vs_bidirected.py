@@ -1,13 +1,13 @@
-from util import create_cycle_graph, graph_to_edges, create_random_graph
-from data_generator import sample_from_BG, sample_from_UG
+from util import create_random_network
+import data_generator
 from maximal_independent_set import maximal_n_apart_independent_set
 from scipy.special import expit
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier
 import warnings
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import accuracy_score
 
 def U_dist():
     '''
@@ -84,14 +84,6 @@ def prepare_data(dataset, ind_set, graph):
         df = df.append(row, ignore_index=True)
     
     return df
-
-
-
-
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score
-import numpy as np
 
 def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=0):
     '''
@@ -181,23 +173,25 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
 
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 800000
+    NUM_OF_VERTICES = 800
     UG_BURN_IN_PERIOD = 100
     BOOTSTRAP_ITER = 200
 
     # graph = create_cycle_graph(NUM_OF_VERTICES)
-    graph = create_random_graph(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=8)
+    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=8)
 
     ''' STEP 2: Create data '''
-    sample = sample_from_BG(graph=graph, U_dist=U_dist, f=f)
-    
-    #sample = sample_from_UG(graph, prob_v_given_neighbors, verbose=True, burn_in=UG_BURN_IN_PERIOD)
+    sample = data_generator.sample_biedge_layer(network=network, 
+                                                sample={}, 
+                                                layer='L', 
+                                                U_dist=data_generator.U_dist_1, 
+                                                f=data_generator.f_1)
 
     ''' STEP 3: Create and prepare data '''
-    ind_set = maximal_n_apart_independent_set(graph=graph, n=5, verbose=False)
+    ind_set = maximal_n_apart_independent_set(graph=network, n=5, verbose=False)
     print("Size of ind set: ", len(ind_set))
 
-    df = prepare_data(sample, ind_set, graph)
+    df = prepare_data(sample, ind_set, network)
     print(df)
     y = pd.DataFrame(df['value'])
     X = df.drop(['value', 'id'], axis=1)
