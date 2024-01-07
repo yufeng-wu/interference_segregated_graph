@@ -1,5 +1,5 @@
 # Williams College Computer Science Thesis
 
-Yufeng Wu
+Yufeng Wu '24
 
 Advisor: Rohit Bhattacharya
