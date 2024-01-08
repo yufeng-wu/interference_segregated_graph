@@ -6,7 +6,6 @@ This code:
 '''
 
 from util import create_random_network, graph_to_edges
-import matplotlib.pyplot as plt 
 from scipy.special import expit
 import numpy as np
 import pandas as pd
@@ -127,35 +126,44 @@ def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=F
     Return:
         - data (dict): Dictionary with the sampled values for each node in the specified layer.
     '''
-
+    # generate random initial values for variables at the current layer
     V_DOMAIN = [1, 0]
-    data = {vertex: random.choice(V_DOMAIN) for vertex in network.keys()}
+    current_layer = {vertex: random.choice(V_DOMAIN) for vertex in network.keys()}
 
     for i in range(burn_in):
         if verbose:
             print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
         for subject in network.keys():
             boundary_values = {
-                'V_neighbors': [data[neighbor] for neighbor in network[subject]],
                 'L_self': None,
-                'A_self': None,
                 'L_neighbors': [],
-                'A_neighbors': []
+                'A_self': None,
+                'A_neighbors': [],
+                'Y_neighbors': [],
             }
 
-            if layer in ['A', 'Y']:
+            if layer == "L":
+                boundary_values['L_neighbors'] = [current_layer[neighbor] for neighbor in network[subject]]
+
+            if layer == "A":
                 boundary_values['L_self'] = sample.loc[subject, 'L']
                 boundary_values['L_neighbors'] = [sample.loc[neighbor, 'L'] for neighbor in network[subject]]
-            
+                boundary_values['A_neighbors'] = [current_layer[neighbor] for neighbor in network[subject]]
+
             if layer == 'Y':
+                boundary_values['L_self'] = sample.loc[subject, 'L']
+                boundary_values['L_neighbors'] = [sample.loc[neighbor, 'L'] for neighbor in network[subject]]
                 boundary_values['A_self'] = sample.loc[subject, 'A']
                 boundary_values['A_neighbors'] = [sample.loc[neighbor, 'A'] for neighbor in network[subject]]
+                boundary_values['Y_neighbors'] = [current_layer[neighbor] for neighbor in network[subject]]
 
             p = prob_v_given_boundary(boundary_values)
 
-            data[subject] = np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
+            print(boundary_values)
 
-    return data # return the sampled data for THE SPECIFIED LAYER
+            current_layer[subject] = np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
+
+    return current_layer # return the sampled data for THE SPECIFIED LAYER
 
 # def sample_from_UG(network, sample, prob_v_given_boundary, verbose=False, burn_in=1000):
 #     '''
@@ -174,8 +182,8 @@ def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=F
 #         if verbose:
 #             print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
 #         for v in network.keys():
-#             v_neighbors = network[v] # returns a list
-#             v_neighbor_values = [v_values[neighbor] for neighbor in v_neighbors]
+#             Y_neighbors = network[v] # returns a list
+#             v_neighbor_values = [v_values[neighbor] for neighbor in Y_neighbors]
 
 #             p = prob_v_given_boundary(data={"V_nb_values":v_neighbor_values})
 
@@ -250,17 +258,17 @@ def prob_v_given_boundary_1(boundary_values):
     Calculate the conditional probability of a node value given the values of its neighbors and its own values from other layers.
 
     Params:
-        - boundary_values (dict): Dictionary containing 'V_neighbors', 'L_self', 'A_self', 'L_neighbors', and 'A_neighbors'.
+        - boundary_values (dict): Dictionary containing 'Y_neighbors', 'L_self', 'A_self', 'L_neighbors', and 'A_neighbors'.
 
     Return:
         float: Conditional probability value between 0 and 1.
     '''
     weighted_sum = 0
     weights = {
-        'V_neighbors': 1.0,
+        'Y_neighbors': 1.0,
         'L_self': 2.0,
         'A_self': 3.0,
-        'L_neighbors': 1.0,
+        'L_neighbors': 0.2,
         'A_neighbors': -2.0
     }
     for key, values in boundary_values.items():
@@ -271,11 +279,10 @@ def prob_v_given_boundary_1(boundary_values):
                 weighted_sum += weights[key] * values
     return expit(weighted_sum)
 
-
 def prob_v_given_boundary_2(boundary_values):
     weighted_sum = 0
     weights = {
-        'V_neighbors': 0.4,
+        'Y_neighbors': 0.4,
         'L_self': -2.0,
         'A_self': -1.4,
         'L_neighbors': 1.4,
@@ -289,15 +296,34 @@ def prob_v_given_boundary_2(boundary_values):
                 weighted_sum += weights[key] * values
     return expit(weighted_sum)
 
+def prob_v_given_boundary_3(boundary_values):
+    weighted_sum = 0
+    weights = {
+        'Y_neighbors': 3,
+        'L_self': -0.8,
+        'A_self': 1.7,
+        'L_neighbors': 9,
+        'A_neighbors': 4
+    }
+    for key, values in boundary_values.items():
+        if values is not None:
+            if isinstance(values, list):
+                weighted_sum += weights[key] * sum(values)
+            else:
+                weighted_sum += weights[key] * values
+    return expit(weighted_sum)
+
 if __name__ == '__main__':
     NUM_OF_VERTICES = 100
-    VERBOSE = False
+    VERBOSE = True
     BURN_IN = 100
 
     network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=0, max_neighbors=5)
-    edge_types = {'L' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
-                  'A' : ['B', {'U_dist':U_dist_1, 'f':f_1}], 
-                  'Y' : ['B', {'U_dist':U_dist_1, 'f':f_1}]}
+    edge_types = {'L' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
+                  'A' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
+                  'Y' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    
+    # ['B', {'U_dist':U_dist_1, 'f':f_1}]
     
     samples = sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)
     
