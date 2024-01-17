@@ -170,3 +170,18 @@ if __name__ == '__main__':
     # print("Length: ", len(result))
     # print("Best possible length: ", len(cycle_UG.keys())//6)
     pass
+
+
+# big picture:
+
+# this weekend: 
+#   prove the L, A, and Y layers (maybe no both - and <-> edges? cuz it's not defined?)
+#   do some code estimation
+
+# next big step:
+#   think about estimation
+#   proofs of estimation algorithms
+
+# greedy algorithm for finding ind set
+
+# read data application

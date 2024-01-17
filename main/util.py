@@ -2,6 +2,23 @@ from collections import defaultdict
 import networkx as nx
 import random
 
+def kth_order_neighborhood(network, node, k):
+    if k == 0:
+        return {node}
+    
+    neighbors = set(network[node])
+    visited = {node}
+
+    for _ in range(k):
+        temp_neighbors = set()
+        for neighbor in neighbors:
+            temp_neighbors.update(set(network[neighbor]))
+        temp_neighbors -= visited
+        neighbors = temp_neighbors
+        visited.update(temp_neighbors)
+
+    return neighbors
+
 def create_random_network(n, min_neighbors, max_neighbors):
     # Ensure that the sum of the degree sequence is even
     while True:

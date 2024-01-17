@@ -1,5 +1,5 @@
-from util import create_random_network
-import data_generator
+from util import create_random_network, kth_order_neighborhood
+import data_generator as dg
 from maximal_independent_set import maximal_n_apart_independent_set
 from scipy.special import expit
 import numpy as np
@@ -45,42 +45,39 @@ def prob_v_given_neighbors(data, params=[0.25, 0.3]):
 
     return expit(a0 + a1 * np.sum(V_nb_values))
 
-def prepare_data(dataset, ind_set, graph):
+def prepare_data(dataset, ind_set, network):
     '''
     Prepare data from dataset using ind_set into the forat below. 
     Each vertex in ind_set should take one row in the output dataframe.
-    
-    Output format:
-    
-    | vertex_id | value | count_nb_value_is_1 | count_nb_value_is_0 | count_nbnb_value_is_1 | count_nbnb_value_is_0 |
-    |  (int)    | 1/0   | (int)               | (int)               | (int)                 | (int)                 |
+
+    Params:
+        - dataset: a pandas dataframe with three columns ('L', 'A', 'Y') and each
+            row is data from one subject in the graph
+        - ind_set: independent set of the graph
+        - graph
     '''
     
-    df = pd.DataFrame(columns=['id', 'value', 
-                               'count_nb_value_is_1', 'count_nb_value_is_0',
-                               'count_nbnb_value_is_1', 'count_nbnb_value_is_0'])
+    df = pd.DataFrame(columns=['id', 'L', 'A', 'Y',
+                           'L_1nb_1_count', 'L_1nb_0_count',
+                           'L_2nb_1_count', 'L_2nb_0_count',
+                           'L_3nb_1_count', 'L_3nb_0_count',
+                           'A_1nb_1_count', 'A_1nb_0_count',
+                           'A_2nb_1_count', 'A_2nb_0_count',
+                           'A_3nb_1_count', 'A_3nb_0_count',
+                           'Y_1nb_1_count', 'Y_1nb_0_count',
+                           'Y_2nb_1_count', 'Y_2nb_0_count',
+                           'Y_3nb_1_count', 'Y_3nb_0_count'])
     
     for node in ind_set:
-        # create a list to store the values of node's neighbors
-        nb_values = [dataset[nb] for nb in graph[node]]
-        
-        # create a list to store the values of {node's neighbors' neighbors} \ node's neighbors
-        node_nbnb = set()
-        for nb in graph[node]:
-            node_nbnb.update(graph[nb])
-            
-        # remove the current vertex and its neighbors
-        node_nbnb.difference_update(graph[node])
-        node_nbnb.discard(node)
+        row = {'id': int(node)}
 
-        nbnb_values = [dataset[element] for element in node_nbnb]
-        
-        row = pd.Series({'id':int(node), 
-                         'value':dataset[node], 
-                         'count_nb_value_is_1':sum(nb_values),
-                         'count_nb_value_is_0':len(nb_values) - sum(nb_values),
-                         'count_nbnb_value_is_1':sum(nbnb_values),
-                         'count_nbnb_value_is_0':len(nbnb_values) - sum(nbnb_values)})
+        for layer in ['L', 'A', 'Y']:
+            row[layer] = dataset.iloc[node][layer]
+            for k_order in range(1, 4):
+                vals = [dataset.iloc[i][layer] for i in kth_order_neighborhood(network, node, k_order)]
+                row[f'{layer}_{k_order}nb_1_count'] = sum(vals)
+                row[f'{layer}_{k_order}nb_0_count'] = len(vals) - sum(vals)
+
         df = df.append(row, ignore_index=True)
     
     return df
@@ -98,10 +95,16 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, ran
     X_train, X_test, y_train, y_test = train_test_split(X, np.ravel(y), test_size=test_size, random_state=random_state)
 
     # Define the parameter grid
+    # param_grid = {
+    #     'n_estimators': [100, 500],
+    #     'max_depth': [None, 20],
+    #     'min_samples_split': [2, 5]
+    # }
+
     param_grid = {
-        'n_estimators': [100, 500],
-        'max_depth': [None, 20],
-        'min_samples_split': [2, 5]
+        'n_estimators': [100],
+        'max_depth': [None],
+        'min_samples_split': [2]
     }
 
     # Instantiate the grid search model
@@ -122,32 +125,6 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, ran
     print(accuracy_alt - accuracy_null)
     return accuracy_alt - accuracy_null
 
-
-
-# def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=0):
-#     '''
-#     Using random forest classifier to train a null model using null_predictors and 
-#     an alternative model using alt_predictors. Return the test accuracy of alternative
-#     model minus that of the null model.
-#     '''
-#     # prepare training and testing set
-#     y = y.astype(int)
-#     X_train, X_test, y_train, y_test = train_test_split(X, np.ravel(y), test_size=test_size, random_state=random_state)
-
-#     # train and test null model
-#     model_null = RandomForestClassifier(n_estimators=1000, max_depth=100)
-#     model_null.fit(X_train[null_predictors], y_train)
-#     y_pred = model_null.predict(X_test[null_predictors])
-#     accuracy_null = accuracy_score(y_test, y_pred)
-    
-#     # train and test alternative model
-#     model_alt = RandomForestClassifier(n_estimators=1000, max_depth=100)
-#     model_alt.fit(X_train[alt_predictors], y_train)
-#     y_pred = model_alt.predict(X_test[alt_predictors])
-#     accuracy_alt = accuracy_score(y_test, y_pred)
-    
-#     return accuracy_alt - accuracy_null
-
 def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5):
     diff_test_accuracies = []
     combined = pd.concat([X, y], axis=1)
@@ -167,46 +144,81 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100
     
     return np.percentile(diff_test_accuracies, [percentile_lower, percentile_upper])
 
-if __name__ == "__main__":
+def test_edge_type(layer, dataset, bootstrap_iter):
+    if layer == "L":
+        null_predictors = ['L_1nb_1_count', 'L_1nb_0_count']
+        alt_predictors = ['L_1nb_1_count', 'L_1nb_0_count', 
+                          'L_2nb_1_count', 'L_2nb_0_count']
+    if layer == "A":
+        null_predictors = ['L', 
+                           'L_1nb_1_count', 'L_1nb_0_count', 
+                           'L_2nb_1_count', 'L_2nb_0_count',
+                           'A_1nb_1_count', 'A_1nb_0_count']
+        alt_predictors = ['L', 
+                          'L_1nb_1_count', 'L_1nb_0_count', 
+                          'L_2nb_1_count', 'L_2nb_0_count',
+                          'L_3nb_1_count', 'L_3nb_0_count',
+                          'A_1nb_1_count', 'A_1nb_0_count',
+                          'A_2nb_1_count', 'A_2nb_0_count']
+    if layer == "Y":
+        null_predictors = ['L', 'A',
+                           'L_1nb_1_count', 'L_1nb_0_count', 
+                           'L_2nb_1_count', 'L_2nb_0_count',
+                           'A_1nb_1_count', 'A_1nb_0_count',
+                           'A_2nb_1_count', 'A_2nb_0_count',
+                           'Y_1nb_1_count', 'Y_1nb_0_count']
+        alt_predictors = ['L', 'A',
+                           'L_1nb_1_count', 'L_1nb_0_count', 
+                           'L_2nb_1_count', 'L_2nb_0_count',
+                           'L_3nb_1_count', 'L_3nb_0_count',
+                           'A_1nb_1_count', 'A_1nb_0_count',
+                           'A_2nb_1_count', 'A_2nb_0_count',
+                           'A_3nb_1_count', 'A_3nb_0_count',
+                           'Y_1nb_1_count', 'Y_1nb_0_count',
+                           'Y_2nb_1_count', 'Y_2nb_0_count']
 
-    # sys.setrecursionlimit(4000)
-    warnings.filterwarnings('ignore')
-
-    ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 800
-    UG_BURN_IN_PERIOD = 100
-    BOOTSTRAP_ITER = 200
-
-    # graph = create_cycle_graph(NUM_OF_VERTICES)
-    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=8)
-
-    ''' STEP 2: Create data '''
-    sample = data_generator.sample_biedge_layer(network=network, 
-                                                sample={}, 
-                                                layer='L', 
-                                                U_dist=data_generator.U_dist_1, 
-                                                f=data_generator.f_1)
-
-    ''' STEP 3: Create and prepare data '''
-    ind_set = maximal_n_apart_independent_set(graph=network, n=5, verbose=False)
-    print("Size of ind set: ", len(ind_set))
-
-    df = prepare_data(sample, ind_set, network)
-    print(df)
-    y = pd.DataFrame(df['value'])
-    X = df.drop(['value', 'id'], axis=1)
-    
-    ''' STEP 4: Perform nonparametric test '''
-    null_predictors = ['count_nb_value_is_1', 'count_nb_value_is_0']
-    alt_predictors = ['count_nb_value_is_1', 'count_nb_value_is_0', 
-                      'count_nbnb_value_is_1', 'count_nbnb_value_is_0']
-    lower, upper = nonparametric_test(X, y, 
-                             null_predictors=null_predictors, 
-                             alt_predictors=alt_predictors,
-                             bootstrap_iter=BOOTSTRAP_ITER)
+    y = pd.DataFrame(dataset[layer])
+    X = dataset.drop([layer, 'id'], axis=1)
+    lower, upper = nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter)
     print("Lower: ", lower)
     print("Upper: ", upper)
     if lower <= 0 <= upper:
-        print("The data is generated from an undirected graph")
+        print(layer, " - ", layer)
     else:
-        print("The data is generated from a bidirected graph")
+        print(layer, "<->", layer)
+
+if __name__ == "__main__":
+    warnings.filterwarnings('ignore')
+    # pd.set_option('display.max_rows', None)
+    # pd.set_option('display.max_columns', None)
+    # pd.set_option('display.width', None)
+    # pd.set_option('display.max_colwidth', None)
+
+    ''' STEP 1: Greate graph '''
+    NUM_OF_VERTICES = 100000
+    BURN_IN = 100
+    BOOTSTRAP_ITER = 100
+    VERBOSE = True
+
+    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=8)
+
+    ''' STEP 2: Create data '''
+    edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
+                  'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
+                  'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    
+    sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
+    
+    ''' STEP 3: Create and prepare data '''
+    ind_set = maximal_n_apart_independent_set(graph=network, n=5, verbose=False)
+    print("Size of ind set: ", len(ind_set))
+    df = prepare_data(sample, ind_set, network)
+    print(df)
+    ''' STEP 4: Perform nonparametric test '''
+    test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
+    test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
+    test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
+
+
+# # next step: create a wrapper function to test for all three layers. 
+# # modify step 4. 

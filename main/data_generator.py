@@ -159,8 +159,6 @@ def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=F
 
             p = prob_v_given_boundary(boundary_values)
 
-            print(boundary_values)
-
             current_layer[subject] = np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
 
     return current_layer # return the sampled data for THE SPECIFIED LAYER
@@ -266,7 +264,7 @@ def prob_v_given_boundary_1(boundary_values):
     weighted_sum = 0
     weights = {
         'Y_neighbors': 1.0,
-        'L_self': 2.0,
+        'L_self': 0.1,
         'A_self': 3.0,
         'L_neighbors': 0.2,
         'A_neighbors': -2.0
@@ -299,11 +297,11 @@ def prob_v_given_boundary_2(boundary_values):
 def prob_v_given_boundary_3(boundary_values):
     weighted_sum = 0
     weights = {
-        'Y_neighbors': 3,
+        'Y_neighbors': 0.2,
         'L_self': -0.8,
         'A_self': 1.7,
-        'L_neighbors': 9,
-        'A_neighbors': 4
+        'L_neighbors': -0.31,
+        'A_neighbors': 0.4
     }
     for key, values in boundary_values.items():
         if values is not None:
@@ -315,16 +313,14 @@ def prob_v_given_boundary_3(boundary_values):
 
 if __name__ == '__main__':
     NUM_OF_VERTICES = 100
-    VERBOSE = True
-    BURN_IN = 100
+    VERBOSE = False
+    BURN_IN = 1
 
     network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=0, max_neighbors=5)
     edge_types = {'L' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
                   'A' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
                   'Y' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
     
-    # ['B', {'U_dist':U_dist_1, 'f':f_1}]
-    
     samples = sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)
     
-    print(samples)
+    print(samples[0].iloc[1])
