@@ -92,23 +92,33 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, ran
     '''
     # prepare training and testing set
     y = y.astype(int)
-    X_train, X_test, y_train, y_test = train_test_split(X, np.ravel(y), test_size=test_size, random_state=random_state)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+
+    # Identify overlapping row indices
+    overlapping_indices = set(X_train.index) & set(X_test.index)
+
+    # Remove overlapping rows from the training set
+    X_train = X_train.drop(index=overlapping_indices)
+    y_train = y_train.drop(index=overlapping_indices)
+
+    # Convert the type of Y
+    y_train = np.ravel(y_train)
+    y_test = np.ravel(y_test)
+
+    param_grid = {
+        'n_estimators': [100, 1000],
+        'max_depth': [None, 20]
+    }
 
     # Define the parameter grid
     # param_grid = {
-    #     'n_estimators': [100, 500],
-    #     'max_depth': [None, 20],
-    #     'min_samples_split': [2, 5]
+    #     'n_estimators': [1000],
+    #     # 'max_depth': [None, 10, 20],
+    #     # 'min_samples_split': [2, 5, 10]
     # }
-
-    param_grid = {
-        'n_estimators': [100],
-        'max_depth': [None],
-        'min_samples_split': [2]
-    }
-
+    
     # Instantiate the grid search model
-    grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv=3, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv=5, n_jobs=-1)
 
     # train and test null model
     grid_search.fit(X_train[null_predictors], y_train)
@@ -122,7 +132,7 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, ran
     y_pred = best_alt_model.predict(X_test[alt_predictors])
     accuracy_alt = accuracy_score(y_test, y_pred)
     
-    print(accuracy_alt - accuracy_null)
+    print(accuracy_alt - accuracy_null, "=", accuracy_alt, "-", accuracy_null)
     return accuracy_alt - accuracy_null
 
 def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5):
@@ -139,7 +149,10 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100
         bootstrapped_y = bootstrapped_combined[y.columns]
         
         # compute the test statistic using the bootstrapped dataset
-        diff_test_acc = diff_test_accuracy(bootstrapped_X, bootstrapped_y, null_predictors, alt_predictors)
+        diff_test_acc = diff_test_accuracy(bootstrapped_X, bootstrapped_y, 
+                                           null_predictors=null_predictors, 
+                                           alt_predictors=alt_predictors,
+                                           random_state=i)
         diff_test_accuracies.append(diff_test_acc)
     
     return np.percentile(diff_test_accuracies, [percentile_lower, percentile_upper])
@@ -179,7 +192,11 @@ def test_edge_type(layer, dataset, bootstrap_iter):
 
     y = pd.DataFrame(dataset[layer])
     X = dataset.drop([layer, 'id'], axis=1)
-    lower, upper = nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter)
+    print(X[alt_predictors], y, null_predictors, alt_predictors)
+    lower, upper = nonparametric_test(X, y, 
+                                      null_predictors=null_predictors, 
+                                      alt_predictors=alt_predictors, 
+                                      bootstrap_iter=bootstrap_iter)
     print("Lower: ", lower)
     print("Upper: ", upper)
     if lower <= 0 <= upper:
@@ -195,17 +212,20 @@ if __name__ == "__main__":
     # pd.set_option('display.max_colwidth', None)
 
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 100000
-    BURN_IN = 100
+    NUM_OF_VERTICES = 10000
+    BURN_IN = 200
     BOOTSTRAP_ITER = 100
     VERBOSE = True
 
-    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=8)
+    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=2)
 
     ''' STEP 2: Create data '''
-    edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
-                  'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
-                  'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    #edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    #               'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
+    #               'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1, 'verbose':VERBOSE}]}
+                #   'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
+                #   'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
     
     sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
     
@@ -216,8 +236,8 @@ if __name__ == "__main__":
     print(df)
     ''' STEP 4: Perform nonparametric test '''
     test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
-    test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
-    test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
+    # test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
+    # test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
 
 
 # # next step: create a wrapper function to test for all three layers. 

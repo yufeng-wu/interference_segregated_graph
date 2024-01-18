@@ -6,8 +6,8 @@ def kth_order_neighborhood(network, node, k):
     if k == 0:
         return {node}
     
-    neighbors = set(network[node])
-    visited = {node}
+    neighbors = set([node])
+    visited = set([node])
 
     for _ in range(k):
         temp_neighbors = set()

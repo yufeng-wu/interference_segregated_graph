@@ -208,7 +208,10 @@ def sample_L_A_Y(n_samples, network, edge_types):
 
         # Sample each layer
         for layer in ['L', 'A', 'Y']:
-            edge_type, args = edge_types[layer]
+            try:
+                edge_type, args = edge_types[layer]
+            except:
+                continue
             if edge_type == 'B':
                 sample[layer] = sample_biedge_layer(network=network, 
                                                     sample=sample, 
@@ -234,7 +237,7 @@ def U_dist_1():
 def f_1(pa_values):
     weighted_sum = 0
     weights = {
-        'U_values': 0.5,
+        'U_values': -21,
         'L_self': 2,
         'A_self': 3,
         'L_neighbors': 1,
@@ -242,12 +245,12 @@ def f_1(pa_values):
     }
 
     for key, values in pa_values.items():
-        if values is not None:
+        if values is not None and values != []:
             if isinstance(values, list):
                 weighted_sum += weights[key] * sum(values)
             else:
                 weighted_sum += weights[key] * values
-
+    
     prob = expit(weighted_sum)
     return np.random.binomial(1, prob)  
 
@@ -270,7 +273,7 @@ def prob_v_given_boundary_1(boundary_values):
         'A_neighbors': -2.0
     }
     for key, values in boundary_values.items():
-        if values is not None:
+        if values is not None and values != []:
             if isinstance(values, list):
                 weighted_sum += weights[key] * sum(values)
             else:
@@ -287,7 +290,7 @@ def prob_v_given_boundary_2(boundary_values):
         'A_neighbors': -2.4
     }
     for key, values in boundary_values.items():
-        if values is not None:
+        if values is not None and values != []:
             if isinstance(values, list):
                 weighted_sum += weights[key] * sum(values)
             else:
@@ -304,7 +307,7 @@ def prob_v_given_boundary_3(boundary_values):
         'A_neighbors': 0.4
     }
     for key, values in boundary_values.items():
-        if values is not None:
+        if values is not None and values != []:
             if isinstance(values, list):
                 weighted_sum += weights[key] * sum(values)
             else:
@@ -313,14 +316,14 @@ def prob_v_given_boundary_3(boundary_values):
 
 if __name__ == '__main__':
     NUM_OF_VERTICES = 100
-    VERBOSE = False
+    VERBOSE = True
     BURN_IN = 1
 
     network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=0, max_neighbors=5)
+    
     edge_types = {'L' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
                   'A' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
                   'Y' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
     
     samples = sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)
     
-    print(samples[0].iloc[1])
