@@ -5,10 +5,9 @@ from scipy.special import expit
 import numpy as np
 import pandas as pd
 import warnings
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score, mean_squared_error
+from sklearn.metrics import accuracy_score
 
 def U_dist():
     '''
@@ -46,7 +45,7 @@ def prob_v_given_neighbors(data, params=[0.25, 0.3]):
 
     return expit(a0 + a1 * np.sum(V_nb_values))
 
-def prepare_data(dataset, ind_set, network):
+def prepare_data(dataset, ind_set, network, max_neighbors):
     '''
     Prepare data from dataset using ind_set into the forat below. 
     Each vertex in ind_set should take one row in the output dataframe.
@@ -58,71 +57,63 @@ def prepare_data(dataset, ind_set, network):
         - graph
     '''
     
-    df = pd.DataFrame()
+    df = pd.DataFrame(columns=['id', 'L', 'L_1nb', 'L_2nb'])
     
     for node in ind_set:
-        row = {'id': int(node)}
+        row = {'id': int(node), 'L': dataset.iloc[node]['L']}
 
-        for layer in ['L']: #, 'A', 'Y']:
-            row[layer] = dataset.iloc[node][layer]
-            for k_order in range(1, 4):
-                vals = [dataset.iloc[i][layer] for i in kth_order_neighborhood(network, node, k_order)]
-                row[f'{layer}_{k_order}nb_1_count'] = sum(vals)
-                row[f'{layer}_{k_order}nb_0_count'] = len(vals) - sum(vals)
-                # row[f'{layer}_{k_order}nb_sum'] = sum(vals)
-                row[f'{layer}_{k_order}nb_avg'] = 0 if len(vals) == 0 else sum(vals) / len(vals)
-
+        # Rank node's neighbors from highest to lowest degree
+        neighbors_ordered_by_degree = sorted(network[node], key=lambda x: len(network[x]), reverse=True)
+        
+        # L_1nb: Build a vector of length max_neighbors and assign L values
+        L_1nb_values = [dataset.loc[neighbor]['L'] for neighbor in neighbors_ordered_by_degree]
+        row['L_1nb'] = L_1nb_values + [-1] * (max_neighbors - len(L_1nb_values)) # use -1 to denote none
+        
+        # L_2nb: Count values in 2nd order neighborhood
+        second_order_neighbors_of_node = kth_order_neighborhood(network, node, 2)
+        L_2nb_values = []
+        for neighbor in neighbors_ordered_by_degree:
+            zero_count = 0
+            one_count = 0
+            for i in set(network[neighbor]) & second_order_neighbors_of_node:
+                if dataset.iloc[i]['L'] == 0:
+                    zero_count += 1
+                else:
+                    one_count += 1
+            L_2nb_values.append(zero_count)
+            L_2nb_values.append(one_count)
+        
+        row['L_2nb'] = L_2nb_values + [-1, -1] * (max_neighbors - len(L_1nb_values))
+        
         df = df.append(row, ignore_index=True)
     
     return df
 
-# def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=0):
-#     '''
-#     Using random forest regressor with grid search for parameter tuning to 
-#     train a null model using null_predictors and an alternative model using 
-#     alt_predictors. 
-    
-#     Return the difference in mean squared error (MSE) between the alternative model and the null model.
-#     '''
-#     # Prepare training and testing set
-#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+def flatten_and_split_lists(df, columns):
+    # Find the maximum length of lists in each column
+    max_lengths = df.iloc[0][columns].apply(lambda x: len(x))
 
-#     # Identify overlapping row indices
-#     overlapping_indices = set(X_train.index) & set(X_test.index)
+    # Fill the new columns with values from the original lists
+    for col in columns:
+        expanded_cols = pd.DataFrame(df[col].tolist(), columns=[f'{col}_{i}' for i in range(max_lengths[col])])
+        expanded_cols = expanded_cols.reset_index(drop=True)  # Reset index to align with the original DataFrame
+        df = pd.concat([df.reset_index(drop=True), expanded_cols], axis=1)
 
-#     # Remove overlapping rows from the training set
-#     X_train = X_train.drop(index=overlapping_indices)
-#     y_train = y_train.drop(index=overlapping_indices)
 
-#     # Convert the type of Y
-#     y_train = np.ravel(y_train)
-#     y_test = np.ravel(y_test)
+    # Drop the original columns with lists
+    df = df.drop(columns=columns)
 
-#     # Define the parameter grid
-#     param_grid = {
-#         'n_estimators': [1000],
-#         'max_depth': [None, 20]
-#     }
-    
-#     # Instantiate the grid search model
-#     grid_search = GridSearchCV(estimator=RandomForestRegressor(), param_grid=param_grid, cv=5, n_jobs=-1)
- 
-#     # Train and test null model
-#     grid_search.fit(X_train[null_predictors], y_train)
-#     best_null_model = grid_search.best_estimator_
-#     y_pred_null = best_null_model.predict(X_test[null_predictors])
-#     mse_null = mean_squared_error(y_test, y_pred_null)
-    
-#     # Train and test alternative model
-#     grid_search.fit(X_train[alt_predictors], y_train)
-#     best_alt_model = grid_search.best_estimator_
-#     y_pred_alt = best_alt_model.predict(X_test[alt_predictors])
-#     mse_alt = mean_squared_error(y_test, y_pred_alt)
+    return df
 
-#     # print(mean_squared_error(y_test, np.full_like(y_test, np.mean(y_train))))
-    
-#     print(mse_alt - mse_null, "=", mse_alt, "-", mse_null)
-#     return mse_alt - mse_null
+
+def create_new_predictors(predictors, X_columns):
+    new_predictors = []
+
+    for predictor in predictors:
+        matching_cols = [col for col in X_columns if col.startswith(predictor)]
+        new_predictors.extend(matching_cols)
+
+    return new_predictors
 
 def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=0):
     '''
@@ -133,6 +124,7 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, ran
     Return the test accuracy of alternative model minus that of the null model.
     '''
     # prepare training and testing set
+
     y = y.astype(int)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
@@ -142,92 +134,51 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, ran
     # Remove overlapping rows from the training set
     X_train = X_train.drop(index=overlapping_indices)
     y_train = y_train.drop(index=overlapping_indices)
+   
 
     # Convert the type of Y
     y_train = np.ravel(y_train)
     y_test = np.ravel(y_test)
 
-    # Define the parameter grid
+    # Flatten and split lists in X_train and X_test
+    list_columns = alt_predictors  # Add more columns if needed
+    X_train = flatten_and_split_lists(X_train, list_columns)
+    X_test = flatten_and_split_lists(X_test, list_columns)
+    # print(X_train)
+
     param_grid = {
-        'penalty' : ['l1', 'l2'],
-        'C' : [1, 0.5, 0.3, 0.1]
+        'n_estimators': [1000]
     }
+
+    # create new null predictors and alt predictors
+    null_predictors = create_new_predictors(null_predictors, X_train.columns)
+    alt_predictors = create_new_predictors(alt_predictors, X_train.columns)
+    # print(null_predictors)
+    # print(alt_predictors)
+    # Define the parameter grid
+    # param_grid = {
+    #     'n_estimators': [1000],
+    #     # 'max_depth': [None, 10, 20],
+    #     # 'min_samples_split': [2, 5, 10]
+    # }
     
-    grid_search = GridSearchCV(estimator=LogisticRegression(), param_grid=param_grid, cv=5, n_jobs=-1)
- 
+    # Instantiate the grid search model
+    grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv=2, n_jobs=-1)
+
+    # train and test null model
     grid_search.fit(X_train[null_predictors], y_train)
-    print(grid_search)
     best_null_model = grid_search.best_estimator_
     y_pred = best_null_model.predict(X_test[null_predictors])
     accuracy_null = accuracy_score(y_test, y_pred)
     
+    # train and test alternative model
     grid_search.fit(X_train[alt_predictors], y_train)
     best_alt_model = grid_search.best_estimator_
     y_pred = best_alt_model.predict(X_test[alt_predictors])
     accuracy_alt = accuracy_score(y_test, y_pred)
-
-    accuracy_baseline = np.sum(y_test) / len(y_test)
-    if accuracy_baseline < 0.5:
-        accuracy_baseline = 1 - accuracy_baseline
-    print("\nBaseline: ", accuracy_baseline)
-    print("Null: ", accuracy_null)
-    print("Alt: ", accuracy_alt)
-    print("Alt - Null =", accuracy_alt - accuracy_null)
     
+    print(accuracy_alt - accuracy_null, "=", accuracy_alt, "-", accuracy_null)
     return accuracy_alt - accuracy_null
-
-# def diff_test_accuracy(X, y, null_predictors, alt_predictors, test_size=0.3, random_state=0):
-#     '''
-#     Using random forest classifier with grid search for parameter tuning to 
-#     train a null model using null_predictors and an alternative model using 
-#     alt_predictors. 
-    
-#     Return the test accuracy of alternative model minus that of the null model.
-#     '''
-#     # prepare training and testing set
-#     y = y.astype(int)
-#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
-
-#     # Identify overlapping row indices
-#     overlapping_indices = set(X_train.index) & set(X_test.index)
-
-#     # Remove overlapping rows from the training set
-#     X_train = X_train.drop(index=overlapping_indices)
-#     y_train = y_train.drop(index=overlapping_indices)
-
-#     # Convert the type of Y
-#     y_train = np.ravel(y_train)
-#     y_test = np.ravel(y_test)
-
-#     # Define the parameter grid
-#     param_grid = {
-#         'n_estimators': [100, 300],
-#         'max_depth': [None, 10],
-#         'max_features': ['sqrt', 'log2']
-#     }
-    
-#     grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv=5, n_jobs=-1)
- 
-#     grid_search.fit(X_train[null_predictors], y_train)
-#     print(grid_search)
-#     best_null_model = grid_search.best_estimator_
-#     y_pred = best_null_model.predict(X_test[null_predictors])
-#     accuracy_null = accuracy_score(y_test, y_pred)
-    
-#     grid_search.fit(X_train[alt_predictors], y_train)
-#     best_alt_model = grid_search.best_estimator_
-#     y_pred = best_alt_model.predict(X_test[alt_predictors])
-#     accuracy_alt = accuracy_score(y_test, y_pred)
-
-#     accuracy_baseline = np.sum(y_test) / len(y_test)
-#     if accuracy_baseline < 0.5:
-#         accuracy_baseline = 1 - accuracy_baseline
-#     print("\nBaseline: ", accuracy_baseline)
-#     print("Null: ", accuracy_null)
-#     print("Alt: ", accuracy_alt)
-#     print("Alt - Null =", accuracy_alt - accuracy_null)
-    
-#     return accuracy_alt - accuracy_null
 
 def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5):
     diff_test_accuracies = []
@@ -253,8 +204,8 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, bootstrap_iter=100
 
 def test_edge_type(layer, dataset, bootstrap_iter):
     if layer == "L":
-        null_predictors = ['L_1nb_1_count', 'L_1nb_0_count']
-        alt_predictors = ['L_1nb_1_count', 'L_1nb_0_count', 'L_2nb_1_count', 'L_2nb_0_count']
+        null_predictors = ['L_1nb']
+        alt_predictors = ['L_1nb', 'L_2nb']
     if layer == "A":
         null_predictors = ['L', 
                            'L_1nb_1_count', 'L_1nb_0_count', 
@@ -285,7 +236,7 @@ def test_edge_type(layer, dataset, bootstrap_iter):
 
     y = pd.DataFrame(dataset[layer])
     X = dataset.drop([layer, 'id'], axis=1)
-    print(X, y)
+    print(X[alt_predictors], y, null_predictors, alt_predictors)
     lower, upper = nonparametric_test(X, y, 
                                       null_predictors=null_predictors, 
                                       alt_predictors=alt_predictors, 
@@ -305,18 +256,19 @@ if __name__ == "__main__":
     # pd.set_option('display.max_colwidth', None)
 
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 1000000
+    NUM_OF_VERTICES = 100000
     BURN_IN = 200
     BOOTSTRAP_ITER = 100
     VERBOSE = True
+    MAX_NBS = 7
 
-    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=3)
+    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=1, max_neighbors=MAX_NBS)
 
     ''' STEP 2: Create data '''
-    # edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    #edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
     #               'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
     #               'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
+    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1, 'verbose':VERBOSE}]}
                 #   'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
                 #   'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
     
@@ -325,9 +277,13 @@ if __name__ == "__main__":
     ''' STEP 3: Create and prepare data '''
     ind_set = maximal_n_apart_independent_set(graph=network, n=5, verbose=False)
     print("Size of ind set: ", len(ind_set))
-    df = prepare_data(sample, ind_set, network)
-
+    df = prepare_data(sample, ind_set, network, max_neighbors=MAX_NBS)
+    print(df)
     ''' STEP 4: Perform nonparametric test '''
     test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
     # test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
     # test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
+
+
+# # next step: create a wrapper function to test for all three layers. 
+# # modify step 4. 

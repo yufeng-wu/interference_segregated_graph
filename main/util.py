@@ -119,3 +119,7 @@ def print_cliques(cliques):
     for size in cliques_by_size.keys():
         print(len(cliques_by_size[size]), "cliques of size", size, ": ")
         print(cliques_by_size[size])
+
+g = create_random_network(10, 1, 3)
+print(g)
+print(kth_order_neighborhood(g, 1, 2))

@@ -232,12 +232,13 @@ def sample_L_A_Y(n_samples, network, edge_types):
     return samples
 
 def U_dist_1():
-    return np.random.normal(0, 1)
+    #return np.random.normal(0, 5)
+    return np.random.binomial(1, 0.3)
 
 def f_1(pa_values):
     weighted_sum = 0
     weights = {
-        'U_values': -21,
+        'U_values': 10,
         'L_self': 2,
         'A_self': 3,
         'L_neighbors': 1,
@@ -251,7 +252,7 @@ def f_1(pa_values):
             else:
                 weighted_sum += weights[key] * values
     
-    prob = expit(weighted_sum)
+    prob = expit(weighted_sum - 0.5) 
     return np.random.binomial(1, prob)  
 
 def prob_v_given_boundary_1(boundary_values):
@@ -267,15 +268,16 @@ def prob_v_given_boundary_1(boundary_values):
     weighted_sum = 0
     weights = {
         'Y_neighbors': 1.0,
-        'L_self': 0.1,
+        'L_self': 1,
         'A_self': 3.0,
-        'L_neighbors': 0.2,
+        'L_neighbors': 0.5,
         'A_neighbors': -2.0
     }
+
     for key, values in boundary_values.items():
         if values is not None and values != []:
             if isinstance(values, list):
-                weighted_sum += weights[key] * sum(values)
+                weighted_sum += weights[key] * sum(values) - 0.5
             else:
                 weighted_sum += weights[key] * values
     return expit(weighted_sum)
