@@ -70,7 +70,7 @@ def prepare_data(dataset, ind_set, network):
                 row[f'{layer}_{k_order}nb_sum'] = sum(vals)
                 row[f'{layer}_{k_order}nb_avg'] = 0 if len(vals) == 0 else sum(vals) / len(vals)
 
-        df = df.append(row, ignore_index=True)
+        df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
     
     return df
 
@@ -299,10 +299,6 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid):
 
 if __name__ == "__main__":
     warnings.filterwarnings('ignore')
-    # pd.set_option('display.max_rows', None)
-    # pd.set_option('display.max_columns', None)
-    # pd.set_option('display.width', None)
-    # pd.set_option('display.max_colwidth', None)
 
     ''' STEP 1: Greate graph '''
     NUM_OF_VERTICES = 10000
