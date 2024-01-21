@@ -7,64 +7,12 @@ This code:
 
 from util import create_random_network, graph_to_edges
 from scipy.special import expit
+from scipy.stats import norm, beta
 import numpy as np
 import pandas as pd
 import random
-
-# def sample_from_BG(edges, U_dist, f):
-#     '''
-#     Given a graph structure, sample a single realization by assuming that there
-#     is an unobserved confounder, U, between each pair of connected vertices. 
-
-#     The value of each U is sampled from U_dist.
-
-#     Params:
-#         - edges list(tuple(int, int)): a list of edges; each tuple denotes an 
-#             edge between two vertices in the graph.
-#         - U_dist (callable): a function that returns a sample from the distribution
-#             of U when called.
-#         - f (callable): the function V = f(U_1, U_2, ..., U_n) + noise
-#             that takes a list of U values and returns a value V.  
-    
-#     Return:
-#         - sample (dict: int -> float): sample[vertex_i] = the value of vertex_i
-
-#     Assumptions:
-#         - the U's are realizations of the same distribution. (We have to assume this! otherwise misspecification.)
-#         - the V's are generated from the same parametric form.
-#     '''
-
-#     # Initialize a dictionary to hold the U values "at" each edge
-#     edge_to_U = {}
-
-#     for edge in edges:
-#         # sample a U value from U_dist
-#         U_value = U_dist()
-#         # save that in a map: each edge -> U value "associated with" that edge.
-#         edge_to_U[edge] = U_value
-
-#     # Initialize a dictionary to hold the V values for each vertex
-#     sample = {}
-
-#     graph = edges_to_graph(edges)
-
-#     # For each vertex, find all edges that involve this vertex
-#     for vertex in graph.keys():
-#         U_values = []
-#         for neighbor in graph[vertex]:
-#             try:
-#                 U_value = edge_to_U[(vertex, neighbor)]
-#             except: # try both orders
-#                 U_value = edge_to_U[(neighbor, vertex)]
-#             U_values.append(U_value)
-        
-#         # Calculate the value of V using the function f and add normally distributed noise
-#         V_value = f(U_values)
-        
-#         sample[vertex] = V_value
-
-#     return sample
-
+import networkx as nx
+from scipy.sparse import csr_matrix
 
 def sample_biedge_layer(network, sample, layer, U_dist, f):
     '''
@@ -127,8 +75,11 @@ def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=F
         - data (dict): Dictionary with the sampled values for each node in the specified layer.
     '''
     # generate random initial values for variables at the current layer
-    V_DOMAIN = [1, 0]
-    current_layer = {vertex: random.choice(V_DOMAIN) for vertex in network.keys()}
+    # V_DOMAIN = [1, 0]
+    # current_layer = {vertex: random.choice(V_DOMAIN) for vertex in network.keys()}
+
+    # generate random initial values for variables at the current layer
+    current_layer = {vertex: np.random.normal(loc=0, scale=1) for vertex in network.keys()}
 
     for i in range(burn_in):
         if verbose:
@@ -157,9 +108,10 @@ def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=F
                 boundary_values['A_neighbors'] = [sample.loc[neighbor, 'A'] for neighbor in network[subject]]
                 boundary_values['Y_neighbors'] = [current_layer[neighbor] for neighbor in network[subject]]
 
+            # this should return a distribution that can sample from.
             p = prob_v_given_boundary(boundary_values)
 
-            current_layer[subject] = np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
+            current_layer[subject] = p # np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
 
     return current_layer # return the sampled data for THE SPECIFIED LAYER
 
@@ -193,6 +145,21 @@ def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=F
 
 #     return v_values
 
+def sample_biedge_L_layer_cont(network, max_neighbors):
+    adjacency_matrix = csr_matrix(nx.adjacency_matrix(nx.from_dict_of_lists(network)))
+    c = np.random.uniform(0, 1 / max_neighbors)
+    covariance_matrix = c * adjacency_matrix
+    np.fill_diagonal(covariance_matrix.toarray(), 1)  # Convert to dense array for fill_diagonal
+
+    # Generate a standard normal sample for each node
+    standard_normal_samples = np.random.normal(size=adjacency_matrix.shape[0])
+
+    # Transform the standard normal samples
+    sample = covariance_matrix @ standard_normal_samples
+    
+    df = pd.DataFrame({"L": sample})
+
+    return df
 
 def sample_L_A_Y(n_samples, network, edge_types):
     '''
@@ -315,6 +282,30 @@ def prob_v_given_boundary_3(boundary_values):
             else:
                 weighted_sum += weights[key] * values
     return expit(weighted_sum)
+
+def prob_v_given_boundary_continuous(boundary_values):
+    weighted_sum = 0
+    weights = {
+        'Y_neighbors': 0.2,
+        'L_self': -0.8,
+        'A_self': 1.7,
+        'L_neighbors': 2,
+        'A_neighbors': 0.4
+    }
+    
+    for key, values in boundary_values.items():
+        if values is not None and values != []:
+            if isinstance(values, list):
+                weighted_sum += weights[key] * sum(values)
+            else:
+                weighted_sum += weights[key] * values
+
+    # mean_value = np.log(abs(weighted_sum)) # mean centered around weighted sum
+    # std_dev_value = 1.0  # Adjust as needed
+    # sampled_value = norm.rvs(loc=mean_value, scale=std_dev_value, size=1)[0]
+    # print(sampled_value)
+    return expit(weighted_sum) + np.random.normal(0, 0.5)
+
 
 if __name__ == '__main__':
     NUM_OF_VERTICES = 100

@@ -121,5 +121,3 @@ def print_cliques(cliques):
         print(cliques_by_size[size])
 
 g = create_random_network(10, 1, 3)
-print(g)
-print(kth_order_neighborhood(g, 1, 2))
