@@ -79,12 +79,12 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     
     return mse_alt - mse_null
 
-def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5):
+def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5, verbose=False):
     diff_test_mses = []
     combined = pd.concat([X, y], axis=1)
     
     for i in range(bootstrap_iter):
-        if i % 10 == 0:
+        if verbose and i % 10 == 0:
             print(i)
         # Bootstrap (sample w replacement) a new dataset from the original X, y
         bootstrapped_combined = combined.sample(n=len(combined), replace=True, random_state=i)
@@ -103,7 +103,7 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
     
     return np.percentile(diff_test_mses, [percentile_lower, percentile_upper])
 
-def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid):
+def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
     if layer == "L":
         null_predictors = ['L_1nb_sum', 'L_1nb_avg']
         alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 'L_2nb_sum', 'L_2nb_avg']
@@ -145,7 +145,8 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid):
                                       alt_predictors=alt_predictors, 
                                       model=model, 
                                       param_grid=param_grid,
-                                      bootstrap_iter=bootstrap_iter)
+                                      bootstrap_iter=bootstrap_iter,
+                                      verbose=verbose)
     
     if upper < 0:
         # When the 97.5th percentile of  mse alt model - mse null model 
@@ -190,7 +191,7 @@ if __name__ == "__main__":
         'max_depth': [None, 20],
         'min_samples_split': [2, 10]
     }
-    lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid)
+    lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
     # test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
     # test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
 

@@ -18,7 +18,7 @@ BOOTSTRAP_ITER = 100
 VERBOSE = False
 MODEL = RandomForestRegressor() 
 PARAM_GRID = {
-    'n_estimators': [100, 500],  
+    'n_estimators': [100],  
     'max_depth': [None, 20],
     'min_samples_split': [2, 10]
 }
@@ -48,7 +48,7 @@ for sample_size in effective_sample_sizes:
     
         sample_under_null = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
         df = prepare_data(sample_under_null, ind_set, network)
-        lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=MODEL, param_grid=PARAM_GRID)
+        lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
         
         new_row = pd.DataFrame({
             'true_model': ['Undirected'], 
@@ -85,7 +85,7 @@ for sample_size in effective_sample_sizes:
 
         sample_under_alt = dg.sample_biedge_L_layer_cont(network=network, max_neighbors=MAX_NB)
         df = prepare_data(sample_under_alt, ind_set, network)
-        lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=MODEL, param_grid=PARAM_GRID)
+        lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
         
         new_row = pd.DataFrame({
             'true_model': ['Bidirected'], 
