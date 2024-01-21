@@ -304,7 +304,7 @@ def prob_v_given_boundary_continuous(boundary_values):
     # std_dev_value = 1.0  # Adjust as needed
     # sampled_value = norm.rvs(loc=mean_value, scale=std_dev_value, size=1)[0]
     # print(sampled_value)
-    return expit(weighted_sum) + np.random.normal(0, 0.5)
+    return expit(weighted_sum) + np.random.normal(0, 0.3)
 
 
 if __name__ == '__main__':

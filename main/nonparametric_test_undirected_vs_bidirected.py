@@ -151,16 +151,16 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid):
         # When the 97.5th percentile of  mse alt model - mse null model 
         # is less than 0, it indicates that the alt model consistently 
         # outperforms the null model.
-        conclusion = "UNDIRECTED (REJECT NULL)"
+        reject_null = True # "BIDIRECTED (REJECT NULL)"
     else:
-        conclusion = "BIDIRECTED (FAIL TO REJECT NULL)"
+        reject_null = False # "UNDIRECTED (FAIL TO REJECT NULL)"
 
-    return lower, upper, conclusion
+    return lower, upper, reject_null
 
 if __name__ == "__main__":
     ''' STEP 1: Greate graph '''
     NUM_OF_VERTICES = 50000
-    BURN_IN = 500
+    BURN_IN = 1000
     BOOTSTRAP_ITER = 100
     VERBOSE = True
     MIN_NB = 1
@@ -190,8 +190,8 @@ if __name__ == "__main__":
         'max_depth': [None, 20],
         'min_samples_split': [2, 10]
     }
-    lower, upper, conclusion = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid)
+    lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid)
     # test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
     # test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
 
-    print(lower, upper, conclusion)
+    print(lower, upper, reject_null)
