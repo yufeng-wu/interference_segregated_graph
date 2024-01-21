@@ -73,9 +73,9 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     y_pred = best_alt_model.predict(X_test[alt_predictors])
     mse_alt = mean_squared_error(y_test, y_pred)
 
-    print("MSE Null:", mse_null)
-    print("MSE Alt:", mse_alt)
-    print("MSE Alt - MSE Null =", mse_alt - mse_null)
+    # print("MSE Null:", mse_null)
+    # print("MSE Alt:", mse_alt)
+    # print("MSE Alt - MSE Null =", mse_alt - mse_null)
     
     return mse_alt - mse_null
 
