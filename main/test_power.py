@@ -65,6 +65,7 @@ for sample_size in effective_sample_sizes:
             'reject_null': [reject_null]
         })
 
+        print(new_row)
         results_df = pd.concat([results_df, new_row], ignore_index=True)
 
     # Simulate under alternative hypothesis
@@ -100,6 +101,8 @@ for sample_size in effective_sample_sizes:
             'upper': [upper],
             'reject_null': [reject_null]
         })
+
+        print(new_row)
 
         results_df = pd.concat([results_df, new_row], ignore_index=True)
     
