@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import random
 
 effective_sample_sizes = [100, 500, 1000, 5000, 10000]
 
@@ -41,7 +42,7 @@ for sample_size in effective_sample_sizes:
             num_vertices *= 2
 
         # Sample sample_size elements from ind_set
-        ind_set = np.random.choice(ind_set, size=sample_size, replace=False)
+        ind_set = set(random.sample(list(ind_set), sample_size))
 
         edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
     
@@ -79,7 +80,7 @@ for sample_size in effective_sample_sizes:
             num_vertices *= 2
 
         # Sample sample_size elements from ind_set
-        ind_set = np.random.choice(ind_set, size=sample_size, replace=False)
+        ind_set = set(random.sample(list(ind_set), sample_size))
 
         sample_under_alt = dg.sample_biedge_L_layer_cont(network=network, max_neighbors=MAX_NB)
         df = prepare_data(sample_under_alt, ind_set, network)
