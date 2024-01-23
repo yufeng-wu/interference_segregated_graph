@@ -25,7 +25,7 @@ def prepare_data(dataset, ind_set, network):
     for node in ind_set:
         row = {'id': int(node)}
 
-        for layer in ['L']: #, 'A', 'Y']:
+        for layer in ['L', 'A', 'Y']:
             row[layer] = dataset.iloc[node][layer]
             for k_order in range(1, 4):
                 vals = [dataset.iloc[i][layer] for i in kth_order_neighborhood(network, node, k_order)]

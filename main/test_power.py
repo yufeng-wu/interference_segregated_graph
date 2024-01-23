@@ -7,38 +7,45 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import random
+import os
+from datetime import datetime
 
 # Global variables
-FILENAME_TO_SAVE = "TEST_POWER_RESULT.csv"
-ITERS_PER_SAMPLE_SIZE = 1 #20
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+FILENAME_TO_SAVE = f"TEST_POWER_RESULT_{timestamp}.csv"
+ITERS_PER_SAMPLE_SIZE = 20
 MIN_NB = 1
 MAX_NB = 6
-BURN_IN = 1#100
-BOOTSTRAP_ITER = 5#100
+BURN_IN = 100
+BOOTSTRAP_ITER = 100
 VERBOSE = False
 ML_MODEL = RandomForestRegressor() 
 PARAM_GRID = {
     'n_estimators': [100],  
-    #'max_depth': [None, 20],
-    #'min_samples_split': [2, 10]
+    'max_depth': [None, 20],
+    'min_samples_split': [2, 10]
 }
 
 
 def generate_edge_types(true_model):
     # Build edge_types based on edge types at each layer
     edge_types = {}
+
     if true_model[0] == 'U': 
         edge_types['L'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
     else:
-        edge_types['L'] = ['B', {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}]
+        edge_types['L'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]
+
     if true_model[1] == 'U': 
         edge_types['A'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
     else:
-        edge_types['A'] = ['B', {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}]
+        edge_types['A'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]
+
     if true_model[2] == 'U': 
         edge_types['Y'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
     else:
-        edge_types['Y'] = ['B', {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}]
+        edge_types['Y'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]
+
     return edge_types
 
 
@@ -62,6 +69,17 @@ def create_network_and_ind_set(sample_size):
 
 
 def main():
+    columns = ['true_model', 'network_size', 'effective_sample_size', 
+               'min_neighbors', 'max_neighbors', 'burn_in_(if_applies)', 
+               'bootstrap_iters', 'ML_model_name', 'tuning_param_grid', 
+               'L_lower', 'L_upper', 'L_result', 
+               'A_lower', 'A_upper', 'A_result', 
+               'Y_lower', 'Y_upper', 'Y_result']
+
+    # Check if the CSV file exists and write the header if it doesn't
+    if not os.path.exists(FILENAME_TO_SAVE):
+        pd.DataFrame(columns=columns).to_csv(FILENAME_TO_SAVE, index=False)
+
     # 8 cases in total. U = undirected, B = Bidirected. 
     # The 1st letter corresponds to the type of edge in the L layer, 
     # the 2nd corresponds to the A layer, and the 3rd corresponds to the Y layer.
@@ -74,7 +92,7 @@ def main():
         for true_model in true_models:
             edge_types = generate_edge_types(true_model)
             
-            for i in tqdm(range(ITERS_PER_SAMPLE_SIZE), desc=true_model+"_"+sample_size):
+            for _ in tqdm(range(ITERS_PER_SAMPLE_SIZE), desc=true_model+"_"+str(sample_size)):
                 network, ind_set = create_network_and_ind_set(sample_size)
                 
                 # Sample a single realization from the specified Graphical Model
@@ -82,7 +100,7 @@ def main():
 
                 # Prepare data using 5-independent set for later ML models
                 df = prepare_data(GM_sample, ind_set, network)
-
+               
                 # Test edge types (-- or <->) for three layers
                 L_lower, L_upper, L_result = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
                 A_lower, A_upper, A_result = test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
@@ -90,31 +108,29 @@ def main():
                 
                 # Create a single row with results from all layers
                 new_row = pd.DataFrame({
-                    'true_model': true_model,
-                    'network_size': len(network),
-                    'effective_sample_size': sample_size,
-                    'min_neighbors': MIN_NB,
-                    'max_neighbors': MAX_NB,
-                    'burn_in_(if_applies)': BURN_IN,
-                    'bootstrap_iters': BOOTSTRAP_ITER,
-                    'ML_model_name': ML_MODEL.__class__.__name__,
-                    'tuning_param_grid': str(PARAM_GRID),
-                    'L_lower': L_lower,
-                    'L_upper': L_upper,
-                    'L_result': L_result,
-                    'A_lower': A_lower,
-                    'A_upper': A_upper,
-                    'A_result': A_result,
-                    'Y_lower': Y_lower,
-                    'Y_upper': Y_upper,
-                    'Y_result': Y_result
-                })
+                    'true_model': [true_model],
+                    'network_size': [len(network)],
+                    'effective_sample_size': [sample_size],
+                    'min_neighbors': [MIN_NB],
+                    'max_neighbors': [MAX_NB],
+                    'burn_in_(if_applies)': [BURN_IN],
+                    'bootstrap_iters': [BOOTSTRAP_ITER],
+                    'ML_model_name': [ML_MODEL.__class__.__name__],
+                    'tuning_param_grid': [str(PARAM_GRID)],
+                    'L_lower': [L_lower],
+                    'L_upper': [L_upper],
+                    'L_result': [L_result],
+                    'A_lower': [A_lower],
+                    'A_upper': [A_upper],
+                    'A_result': [A_result],
+                    'Y_lower': [Y_lower],
+                    'Y_upper': [Y_upper],
+                    'Y_result': [Y_result]
+                })  
 
-                print(new_row)
-                test_results = pd.concat([test_results, new_row], ignore_index=True)
+                new_row.to_csv(FILENAME_TO_SAVE, mode='a', header=False, index=False)
 
-    test_results.to_csv(FILENAME_TO_SAVE, index=False)
-    print(f"[COMPLETE] Results saved to {FILENAME_TO_SAVE}")
+    print(f"[COMPLETE] All results saved to {FILENAME_TO_SAVE}")
 
 if __name__ == "__main__":
     main()
