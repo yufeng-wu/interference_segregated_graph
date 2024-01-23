@@ -16,9 +16,9 @@ FILENAME_TO_SAVE = f"TEST_POWER_RESULT_{timestamp}.csv"
 ITERS_PER_SAMPLE_SIZE = 10
 MIN_NB = 1
 MAX_NB = 6
-BURN_IN = 100
-BOOTSTRAP_ITER = 50
-VERBOSE = False
+BURN_IN = 500
+BOOTSTRAP_ITER = 20 #100
+VERBOSE = True
 ML_MODEL = RandomForestRegressor() 
 PARAM_GRID = {
     'n_estimators': [100],  
@@ -51,7 +51,7 @@ def generate_edge_types(true_model):
 
 def create_network_and_ind_set(sample_size):
     ind_set = []
-    _FIRST_TRIAL_SCALING_FACTOR = 40
+    _FIRST_TRIAL_SCALING_FACTOR = 20
     _SUBSEQUENT_TRIALS_SCALING_FACTOR = 2
     num_vertices = sample_size * _FIRST_TRIAL_SCALING_FACTOR
 
@@ -83,7 +83,7 @@ def main():
     # 8 cases in total. U = undirected, B = Bidirected. 
     # The 1st letter corresponds to the type of edge in the L layer, 
     # the 2nd corresponds to the A layer, and the 3rd corresponds to the Y layer.
-    true_models = ["UUU", "BUU", "UBU", "UUB", "UBB", "BUB", "BBU", "BBB"]
+    true_models = ["BUU", "UUU", "UBU", "UUB", "UBB", "BUB", "BBU", "BBB"]
     effective_sample_sizes = [1000, 3000]
 
     for sample_size in effective_sample_sizes:
