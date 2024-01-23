@@ -59,7 +59,7 @@ def sample_biedge_layer(network, sample, layer, U_dist, f):
 
     return data
 
-def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=False, burn_in=1000):
+def sample_unedge_layer(network, sample, layer, sample_given_boundary, verbose=False, burn_in=1000):
     '''
     Function to sample from an Undirected Graph (UG).
 
@@ -108,42 +108,9 @@ def sample_unedge_layer(network, sample, layer, prob_v_given_boundary, verbose=F
                 boundary_values['A_neighbors'] = [sample.loc[neighbor, 'A'] for neighbor in network[subject]]
                 boundary_values['Y_neighbors'] = [current_layer[neighbor] for neighbor in network[subject]]
 
-            # this should return a distribution that can sample from.
-            p = prob_v_given_boundary(boundary_values)
-
-            current_layer[subject] = p # np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
+            current_layer[subject] = sample_given_boundary(boundary_values) # np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
 
     return current_layer # return the sampled data for THE SPECIFIED LAYER
-
-# def sample_from_UG(network, sample, prob_v_given_boundary, verbose=False, burn_in=1000):
-#     '''
-#     "boundary" is defined as the boundary in LWF chain graph model for a node. 
-#     '''
-#     V_DOMAIN = [1, 0]
-
-#     # Initialize vertices with random values chosen from V_DOMAIN
-#     v_values = {vertex: random.choice(V_DOMAIN) for vertex in network.keys()}
-
-#     # List to store samples for a particular node, say node 0
-#     # node_0_samples = []
-
-#     # Gibbs sampling
-#     for i in range(burn_in):
-#         if verbose:
-#             print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
-#         for v in network.keys():
-#             Y_neighbors = network[v] # returns a list
-#             v_neighbor_values = [v_values[neighbor] for neighbor in Y_neighbors]
-
-#             p = prob_v_given_boundary(data={"V_nb_values":v_neighbor_values})
-
-#             # sample a new value for the current node based on conditional proba
-#             v_values[v] = np.random.choice(V_DOMAIN, size=1, p=np.array([p, 1-p]))[0]
-        
-#         # Store the value of node 0 at this iteration
-#         # node_0_samples.append(v_values[0])
-
-#     return v_values
 
 def sample_biedge_L_layer_cont(network, max_neighbors):
     adjacency_matrix = csr_matrix(nx.adjacency_matrix(nx.from_dict_of_lists(network)))
@@ -189,7 +156,7 @@ def sample_L_A_Y(n_samples, network, edge_types):
                 sample[layer] = sample_unedge_layer(network=network,
                                                     sample=sample,
                                                     layer=layer,
-                                                    prob_v_given_boundary=args['prob_v_given_boundary'],
+                                                    sample_given_boundary=args['sample_given_boundary'],
                                                     verbose=args['verbose'],
                                                     burn_in=args['burn_in'])
 
@@ -199,15 +166,14 @@ def sample_L_A_Y(n_samples, network, edge_types):
     return samples
 
 def U_dist_1():
-    #return np.random.normal(0, 5)
-    return np.random.binomial(1, 0.3)
+    return np.random.normal(0, 1)
 
 def f_1(pa_values):
     weighted_sum = 0
     weights = {
-        'U_values': 10,
+        'U_values': 5,
         'L_self': 2,
-        'A_self': 3,
+        'A_self': -3,
         'L_neighbors': 1,
         'A_neighbors': -2
     }
@@ -219,19 +185,10 @@ def f_1(pa_values):
             else:
                 weighted_sum += weights[key] * values
     
-    prob = expit(weighted_sum - 0.5) 
-    return np.random.binomial(1, prob)  
+    noise = np.random.normal(0, 1)
+    return weighted_sum + noise
 
 def prob_v_given_boundary_1(boundary_values):
-    '''
-    Calculate the conditional probability of a node value given the values of its neighbors and its own values from other layers.
-
-    Params:
-        - boundary_values (dict): Dictionary containing 'Y_neighbors', 'L_self', 'A_self', 'L_neighbors', and 'A_neighbors'.
-
-    Return:
-        float: Conditional probability value between 0 and 1.
-    '''
     weighted_sum = 0
     weights = {
         'Y_neighbors': 1.0,
@@ -283,14 +240,18 @@ def prob_v_given_boundary_3(boundary_values):
                 weighted_sum += weights[key] * values
     return expit(weighted_sum)
 
-def prob_v_given_boundary_continuous(boundary_values):
+def sample_given_boundary_continuous(boundary_values):
+    '''
+    Note: This can't be any random function. 
+          Check Lauritzen chain graph paper page 342.
+    '''
     weighted_sum = 0
     weights = {
-        'Y_neighbors': 0.2,
-        'L_self': -0.8,
+        'Y_neighbors': -0.1, # this need to be controlled
+        'L_self': 0.8,
         'A_self': 1.7,
-        'L_neighbors': 2,
-        'A_neighbors': 0.4
+        'L_neighbors': -0.1, # this need to be controlled
+        'A_neighbors': -0.1 # this need to be controlled
     }
     
     for key, values in boundary_values.items():
@@ -300,23 +261,4 @@ def prob_v_given_boundary_continuous(boundary_values):
             else:
                 weighted_sum += weights[key] * values
 
-    # mean_value = np.log(abs(weighted_sum)) # mean centered around weighted sum
-    # std_dev_value = 1.0  # Adjust as needed
-    # sampled_value = norm.rvs(loc=mean_value, scale=std_dev_value, size=1)[0]
-    # print(sampled_value)
-    return expit(weighted_sum) + np.random.normal(0, 0.3)
-
-
-if __name__ == '__main__':
-    NUM_OF_VERTICES = 100
-    VERBOSE = True
-    BURN_IN = 1
-
-    network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=0, max_neighbors=5)
-    
-    edge_types = {'L' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_1, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
-                  'A' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
-                  'Y' : ['U', {'prob_v_given_boundary':prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    
-    samples = sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)
-    
+    return weighted_sum + np.random.normal(0, 1)

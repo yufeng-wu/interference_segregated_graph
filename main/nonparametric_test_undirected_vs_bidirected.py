@@ -4,11 +4,9 @@ from maximal_independent_set import maximal_n_apart_independent_set
 from scipy.special import expit
 import numpy as np
 import pandas as pd
-import warnings
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score, mean_squared_error
+from sklearn.metrics import mean_squared_error
 
 def prepare_data(dataset, ind_set, network):
     '''
@@ -73,9 +71,9 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     y_pred = best_alt_model.predict(X_test[alt_predictors])
     mse_alt = mean_squared_error(y_test, y_pred)
 
-    # print("MSE Null:", mse_null)
-    # print("MSE Alt:", mse_alt)
-    # print("MSE Alt - MSE Null =", mse_alt - mse_null)
+    print("MSE Null:", mse_null)
+    print("MSE Alt:", mse_alt)
+    print("MSE Alt - MSE Null =", mse_alt - mse_null)
     
     return mse_alt - mse_null
 
@@ -106,7 +104,8 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
 def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
     if layer == "L":
         null_predictors = ['L_1nb_sum', 'L_1nb_avg']
-        alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 'L_2nb_sum', 'L_2nb_avg']
+        alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
+                          'L_2nb_sum', 'L_2nb_avg']
     if layer == "A":
         null_predictors = ['L', 
                            'L_1nb_sum', 'L_1nb_avg', 
@@ -152,36 +151,35 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
         # When the 97.5th percentile of  mse alt model - mse null model 
         # is less than 0, it indicates that the alt model consistently 
         # outperforms the null model.
-        reject_null = True # "BIDIRECTED (REJECT NULL)"
+        result = 'B' # "BIDIRECTED (REJECT NULL)"
     else:
-        reject_null = False # "UNDIRECTED (FAIL TO REJECT NULL)"
+        result = 'U' # "UNDIRECTED (FAIL TO REJECT NULL)"
 
-    return lower, upper, reject_null
+    return lower, upper, result
 
 if __name__ == "__main__":
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 50000
-    BURN_IN = 1000
-    BOOTSTRAP_ITER = 100
+    NUM_OF_VERTICES = 30000
+    BURN_IN = 100
+    BOOTSTRAP_ITER = 50
     VERBOSE = True
     MIN_NB = 1
-    MAX_NB = 5
+    MAX_NB = 8
 
     network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=MIN_NB, max_neighbors=MAX_NB)
 
     ''' STEP 2: Create data '''
-    edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    #               'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
-    #               'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    # edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
-                #   'A' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_2, 'verbose':VERBOSE, 'burn_in':BURN_IN}], 
-                #   'Y' : ['U', {'prob_v_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    # edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+                   #'A' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    #               'Y' : ['U', {'sample_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
     
     sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
     #sample = dg.sample_biedge_L_layer_cont(network=network, max_neighbors=MAX_NB)
 
     ''' STEP 3: Create and prepare data '''
     ind_set = maximal_n_apart_independent_set(graph=network, n=5, verbose=False)
+    print("size of ind set", len(ind_set))
     df = prepare_data(sample, ind_set, network)
 
     ''' STEP 4: Perform nonparametric test '''
@@ -191,8 +189,5 @@ if __name__ == "__main__":
         'max_depth': [None, 20],
         'min_samples_split': [2, 10]
     }
-    lower, upper, reject_null = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
-    # test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
-    # test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER)
-
-    print(lower, upper, reject_null)
+    lower, upper, result = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
+    print(lower, upper, result)
