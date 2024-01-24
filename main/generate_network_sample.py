@@ -29,7 +29,7 @@ def generate_edge_types(true_model):
     if true_model[1] == 'U': 
         edge_types['A'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
     else:
-        edge_types['A'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]
+        edge_types['A'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_binary}]
 
     if true_model[2] == 'U': 
         edge_types['Y'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
