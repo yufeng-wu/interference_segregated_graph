@@ -172,10 +172,10 @@ def f_1(pa_values):
     weighted_sum = 0
     weights = {
         'U_values': 5,
-        'L_self': 2,
-        'A_self': -3,
-        'L_neighbors': 1,
-        'A_neighbors': -2
+        'L_self': 0.2,
+        'A_self': -0.3,
+        'L_neighbors': 0.1,
+        'A_neighbors': -0.2
     }
 
     for key, values in pa_values.items():
