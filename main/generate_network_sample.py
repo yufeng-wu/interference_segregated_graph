@@ -8,10 +8,6 @@
 from util import create_random_network
 import data_generator as dg
 from maximal_independent_set import maximal_n_apart_independent_set
-import numpy as np
-import random
-import os
-from datetime import datetime
 import pickle
 import pandas as pd
 
@@ -20,7 +16,6 @@ MIN_NB = 1
 MAX_NB = 6
 BURN_IN = 200
 VERBOSE = True
-
 
 def generate_edge_types(true_model):
     # Build edge_types based on edge types at each layer
@@ -46,7 +41,7 @@ def generate_edge_types(true_model):
 
 def create_network_and_ind_set(sample_size):
     ind_set = []
-    _FIRST_TRIAL_SCALING_FACTOR = 20
+    _FIRST_TRIAL_SCALING_FACTOR = 10
     _SUBSEQUENT_TRIALS_SCALING_FACTOR = 2
     num_vertices = sample_size * _FIRST_TRIAL_SCALING_FACTOR
 
