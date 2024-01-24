@@ -71,9 +71,9 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     y_pred = best_alt_model.predict(X_test[alt_predictors])
     mse_alt = mean_squared_error(y_test, y_pred)
 
-    # print("MSE Null:", mse_null)
-    # print("MSE Alt:", mse_alt)
-    # print("MSE Alt - MSE Null =", mse_alt - mse_null)
+    print("MSE Null:", mse_null)
+    print("MSE Alt:", mse_alt)
+    print("MSE Alt - MSE Null =", mse_alt - mse_null)
     
     return mse_alt - mse_null
 
@@ -159,8 +159,8 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
 
 if __name__ == "__main__":
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 30000
-    BURN_IN = 100
+    NUM_OF_VERTICES = 100000
+    BURN_IN = 200
     BOOTSTRAP_ITER = 50
     VERBOSE = True
     MIN_NB = 1
@@ -169,12 +169,15 @@ if __name__ == "__main__":
     network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=MIN_NB, max_neighbors=MAX_NB)
 
     ''' STEP 2: Create data '''
-    # edge_types = {'L' : ['U', {'prob_v_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-                   #'A' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    #               'Y' : ['U', {'sample_given_boundary':dg.prob_v_given_boundary_3, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
+    # edge_types = {'L' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
+    #                'A' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
+    #               'Y' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
+                  'A' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
+                  'Y' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
     
     sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
+    print("sampling done")
     #sample = dg.sample_biedge_L_layer_cont(network=network, max_neighbors=MAX_NB)
 
     ''' STEP 3: Create and prepare data '''
@@ -190,4 +193,8 @@ if __name__ == "__main__":
         'min_samples_split': [2, 10]
     }
     lower, upper, result = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
-    print(lower, upper, result)
+    print("L result: ", lower, upper, result)
+    lower, upper, result = test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
+    print("A result: ", lower, upper, result)
+    lower, upper, result = test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
+    print("Y result: ", lower, upper, result)

@@ -17,7 +17,7 @@ ITERS_PER_SAMPLE_SIZE = 10
 MIN_NB = 1
 MAX_NB = 6
 BURN_IN = 500
-BOOTSTRAP_ITER = 20 #100
+BOOTSTRAP_ITER = 30 #100
 VERBOSE = True
 ML_MODEL = RandomForestRegressor() 
 PARAM_GRID = {
@@ -83,7 +83,7 @@ def main():
     # 8 cases in total. U = undirected, B = Bidirected. 
     # The 1st letter corresponds to the type of edge in the L layer, 
     # the 2nd corresponds to the A layer, and the 3rd corresponds to the Y layer.
-    true_models = ["BUU", "UUU", "UBU", "UUB", "UBB", "BUB", "BBU", "BBB"]
+    true_models = ["UUU", "BUU", "UBU", "UUB", "UBB", "BUB", "BBU", "BBB"]
     effective_sample_sizes = [1000, 3000]
 
     for sample_size in effective_sample_sizes:
