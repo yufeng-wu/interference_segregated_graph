@@ -194,7 +194,7 @@ if __name__ == "__main__":
     }
     # lower, upper, result = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
     # print("L result: ", lower, upper, result)
-    lower, upper, result = test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
-    print("A result: ", lower, upper, result)
-    # lower, upper, result = test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
-    # print("Y result: ", lower, upper, result)
+    # lower, upper, result = test_edge_type(layer="A", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
+    # print("A result: ", lower, upper, result)
+    lower, upper, result = test_edge_type(layer="Y", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
+    print("Y result: ", lower, upper, result)
