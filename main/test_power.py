@@ -13,11 +13,11 @@ from datetime import datetime
 # Global variables
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FILENAME_TO_SAVE = f"TEST_POWER_RESULT_{timestamp}.csv"
-ITERS_PER_SAMPLE_SIZE = 3
+ITERS_PER_SAMPLE_SIZE = 1
 MIN_NB = 1
 MAX_NB = 6
-BURN_IN = 200
-BOOTSTRAP_ITER = 100
+BURN_IN = 500
+BOOTSTRAP_ITER = 20
 VERBOSE = False
 ML_MODEL = RandomForestRegressor() 
 PARAM_GRID = {
