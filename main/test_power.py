@@ -18,7 +18,7 @@ MIN_NB = 1
 MAX_NB = 6
 BURN_IN = 500
 BOOTSTRAP_ITER = 20
-VERBOSE = False
+VERBOSE = True
 ML_MODEL = RandomForestRegressor() 
 PARAM_GRID = {
     'n_estimators': [100, 500],  
