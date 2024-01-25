@@ -46,20 +46,6 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     Return the test accuracy of alternative model minus that of the null model.
     '''
 
-    # If the model is a linear regression model, we won't do train-test split 
-    # and parameter tuning.
-    if isinstance(model, LinearRegression):
-
-        # train null and alternative models directly on the entire dataset 
-        # and calculate MSE for both models.
-        null_model = model.fit(X[null_predictors], y)
-        mse_null = mean_squared_error(y, null_model.predict(X[null_predictors]))
-
-        alt_model = model.fit(X[alt_predictors], y)
-        mse_alt = mean_squared_error(y, alt_model.predict(X[alt_predictors]))
-        
-        return mse_alt - mse_null
-
     # prepare training and testing set
     y = y.astype(float)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
@@ -74,6 +60,16 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     # Convert the type of Y
     y_train = np.ravel(y_train)
     y_test = np.ravel(y_test)
+
+    # If the model is a linear regression model, skip parameter tuning
+    if isinstance(model, LinearRegression):
+        null_model = model.fit(X_train[null_predictors], y_train)
+        mse_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
+
+        alt_model = model.fit(X_train[alt_predictors], y_train)
+        mse_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
+        
+        return mse_alt - mse_null
 
     grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1)
  
