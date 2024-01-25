@@ -7,6 +7,11 @@ from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+import warnings
+from joblib import parallel_backend
+
+# Filter out the UserWarning related to nested parallelism
+warnings.filterwarnings('ignore', category=UserWarning, message='.*Loky-backed parallel loops cannot be called in a multiprocessing.*')
 
 # Global variables
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
