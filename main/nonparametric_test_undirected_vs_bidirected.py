@@ -72,7 +72,7 @@ def _remove_overlaps(X_train, X_val, X_test, y_train, y_val, y_test):
     return X_train, X_val, X_test, y_train, y_val, y_test
 
 
-def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid, test_size=0.3, val_size=0.2, random_state=0):
+def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid, test_size=0.2, val_size=0.15, random_state=0):
     
     # Split the data into training + validation, and test sets
     X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)

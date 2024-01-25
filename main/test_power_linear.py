@@ -16,7 +16,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"TEST_POWER_LINEAR_RESULT_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 20 #100
+ITERS_PER_SAMPLE_SIZE = 4 #100
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
 
@@ -33,19 +33,19 @@ VERBOSE = True
 #     'subsample': [0.7, 1]
 # }
 
-# ML_MODEL = RandomForestRegressor()
-# PARAM_GRID = {
-#         'n_estimators': [100],  
-#         'max_depth': [None, 20],
-#         'min_samples_split': [2, 10]
-#     }
-
-ML_MODEL = DecisionTreeRegressor()
+ML_MODEL = RandomForestRegressor()
 PARAM_GRID = {
-    'max_depth': [None, 10, 20], 
-    'min_samples_split': [2, 10],
-    'min_samples_leaf': [1, 5]
-}
+        'n_estimators': [100, 500],  
+        'max_depth': [None, 20],
+        'min_samples_split': [2, 10]
+    }
+
+# ML_MODEL = DecisionTreeRegressor()
+# PARAM_GRID = {
+#     'max_depth': [None, 10, 20], 
+#     'min_samples_split': [2, 10],
+#     'min_samples_leaf': [1, 5]
+# }
 
 DATA_SOURCE = "../data/simulation/"
 
