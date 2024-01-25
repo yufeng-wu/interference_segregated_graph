@@ -20,8 +20,8 @@ ITERS_PER_SAMPLE_SIZE = 100
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
 
-ML_MODEL = LinearRegression()
-PARAM_GRID = {}
+# ML_MODEL = LinearRegression()
+# PARAM_GRID = {}
 
 # Instantiate an XGBoost regressor object
 # ML_MODEL = xgb.XGBRegressor(objective ='reg:squarederror')
@@ -40,12 +40,12 @@ PARAM_GRID = {}
 #         'min_samples_split': [2, 10]
 #     }
 
-# ML_MODEL = DecisionTreeRegressor()
-# PARAM_GRID = {
-#     'max_depth': [None, 10], 
-#     'min_samples_split': [2, 10],
-#     'min_samples_leaf': [1, 5]
-# }
+ML_MODEL = DecisionTreeRegressor()
+PARAM_GRID = {
+    'max_depth': [None, 10, 20], 
+    'min_samples_split': [2, 10],
+    'min_samples_leaf': [1, 5]
+}
 
 DATA_SOURCE = "../data/simulation/"
 
@@ -60,7 +60,7 @@ def main():
         pd.DataFrame(columns=columns).to_csv(FILENAME_TO_SAVE, index=False)
 
     true_models = ["BBU", "UBU", "UBB", "BBB"]
-    effective_sample_sizes = [100, 500, 1000, 2000, 5000]
+    effective_sample_sizes = [1000, 2000, 3000, 5000]
 
     # read in network.pkl # fix this using DATA_SOURCE11
     with open(os.path.join(DATA_SOURCE, 'network.pkl'), 'rb') as file:
