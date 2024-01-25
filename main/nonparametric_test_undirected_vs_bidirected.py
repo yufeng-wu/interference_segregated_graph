@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import LinearRegression
+from itertools import product
 
 def prepare_data(dataset, ind_set, network):
     '''
@@ -37,57 +38,147 @@ def prepare_data(dataset, ind_set, network):
     
     return df
 
-def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid, test_size=0.3, random_state=0):
-    '''
-    Using random forest classifier with grid search for parameter tuning to 
-    train a null model using null_predictors and an alternative model using 
-    alt_predictors. 
+import pandas as pd
+
+def _remove_overlaps(X_train, X_val, X_test, y_train, y_val, y_test):
+    """
+    Remove overlapping indices among training, validation, and test sets.
+
+    Args:
+    X_train, X_val, X_test: DataFrames representing the feature sets.
+    y_train, y_val, y_test: Series representing the target sets.
+
+    Returns:
+    Adjusted DataFrames and Series without overlapping indices.
+    """
+    # Identify overlapping row indices among the sets
+    overlapping_indices = (set(X_train.index) & set(X_val.index)) | \
+                          (set(X_train.index) & set(X_test.index)) | \
+                          (set(X_val.index) & set(X_test.index))
+    overlapping_indices = list(overlapping_indices)
+
+    # Append overlapping rows from validation and test sets to the training set
+    X_train = pd.concat([X_train, X_val.loc[X_val.index.intersection(overlapping_indices)], 
+                                  X_test.loc[X_test.index.intersection(overlapping_indices)]])
+    y_train = pd.concat([y_train, y_val.loc[y_val.index.intersection(overlapping_indices)], 
+                                  y_test.loc[y_test.index.intersection(overlapping_indices)]])
+
+    # Remove overlapping rows from validation and test sets
+    X_val = X_val.drop(index=overlapping_indices, errors='ignore')
+    X_test = X_test.drop(index=overlapping_indices, errors='ignore')
+    y_val = y_val.drop(index=overlapping_indices, errors='ignore')
+    y_test = y_test.drop(index=overlapping_indices, errors='ignore')
+
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+
+def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid, test_size=0.3, val_size=0.2, random_state=0):
     
-    Return the test accuracy of alternative model minus that of the null model.
-    '''
+    # Split the data into training + validation, and test sets
+    X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
-    # prepare training and testing set
-    y = y.astype(float)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    # Further split the training data into training and validation sets
+    X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=val_size, random_state=random_state)
 
-    # Identify overlapping row indices
-    overlapping_indices = set(X_train.index) & set(X_test.index)
-
-    # Remove overlapping rows from the training set
-    X_train = X_train.drop(index=overlapping_indices)
-    y_train = y_train.drop(index=overlapping_indices)
+    # Remove overlapping indices
+    X_train, X_val, X_test, y_train, y_val, y_test = _remove_overlaps(X_train, X_val, X_test, y_train, y_val, y_test)
 
     # Convert the type of Y
     y_train = np.ravel(y_train)
+    y_val = np.ravel(y_val)
     y_test = np.ravel(y_test)
 
-    # If the model is a linear regression model, skip parameter tuning
-    if isinstance(model, LinearRegression):
-        null_model = model.fit(X_train[null_predictors], y_train)
-        mse_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
+    # Function to get all combinations of parameters in param_grid
+    def param_combinations(param_grid):
+        keys = param_grid.keys()
+        values = param_grid.values()
+        for instance in product(*values):
+            yield dict(zip(keys, instance))
 
-        alt_model = model.fit(X_train[alt_predictors], y_train)
-        mse_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
+    # Function to train model and return MSE on validation set for given parameters
+    def train_and_evaluate(predictors, params):
+        model.set_params(**params)
+        model.fit(X_train[predictors], y_train)
+        y_pred_val = model.predict(X_val[predictors])
+        return mean_squared_error(y_val, y_pred_val)
+
+    # Evaluate and find the best model for null_predictors and alt_predictors
+    def find_best_model(predictors):
+        best_mse = float('inf')
+        best_params = None
+        for params in param_combinations(param_grid):
+            mse = train_and_evaluate(predictors, params)
+            if mse < best_mse:
+                best_mse = mse
+                best_params = params
+        return best_params
+
+    # Find the best model for null_predictors
+    best_params_null = find_best_model(null_predictors)
+    model.set_params(**best_params_null)
+    model.fit(X_train[null_predictors], y_train)
+    mse_null_test = mean_squared_error(y_test, model.predict(X_test[null_predictors]))
+
+    # Find the best model for alt_predictors
+    best_params_alt = find_best_model(alt_predictors)
+    model.set_params(**best_params_alt)
+    model.fit(X_train[alt_predictors], y_train)
+    mse_alt_test = mean_squared_error(y_test, model.predict(X_test[alt_predictors]))
+
+    return mse_alt_test - mse_null_test
+
+
+# def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid, test_size=0.3, random_state=0):
+#     '''
+#     Using random forest classifier with grid search for parameter tuning to 
+#     train a null model using null_predictors and an alternative model using 
+#     alt_predictors. 
+    
+#     Return the test accuracy of alternative model minus that of the null model.
+#     '''
+
+#     # prepare training and testing set
+#     y = y.astype(float)
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+
+#     # Identify overlapping row indices
+#     overlapping_indices = set(X_train.index) & set(X_test.index)
+
+#     # Remove overlapping rows from the training set
+#     X_train = X_train.drop(index=overlapping_indices)
+#     y_train = y_train.drop(index=overlapping_indices)
+
+#     # Convert the type of Y
+#     y_train = np.ravel(y_train)
+#     y_test = np.ravel(y_test)
+
+#     # If the model is a linear regression model, skip parameter tuning
+#     if isinstance(model, LinearRegression):
+#         null_model = model.fit(X_train[null_predictors], y_train)
+#         mse_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
+
+#         alt_model = model.fit(X_train[alt_predictors], y_train)
+#         mse_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
         
-        return mse_alt - mse_null
+#         return mse_alt - mse_null
 
-    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1)
+#     grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1)
  
-    grid_search.fit(X_train[null_predictors], y_train)
-    best_null_model = grid_search.best_estimator_
-    y_pred = best_null_model.predict(X_test[null_predictors])
-    mse_null = mean_squared_error(y_test, y_pred)
+#     grid_search.fit(X_train[null_predictors], y_train)
+#     best_null_model = grid_search.best_estimator_
+#     y_pred = best_null_model.predict(X_test[null_predictors])
+#     mse_null = mean_squared_error(y_test, y_pred)
     
-    grid_search.fit(X_train[alt_predictors], y_train)
-    best_alt_model = grid_search.best_estimator_
-    y_pred = best_alt_model.predict(X_test[alt_predictors])
-    mse_alt = mean_squared_error(y_test, y_pred)
+#     grid_search.fit(X_train[alt_predictors], y_train)
+#     best_alt_model = grid_search.best_estimator_
+#     y_pred = best_alt_model.predict(X_test[alt_predictors])
+#     mse_alt = mean_squared_error(y_test, y_pred)
 
-    # print("MSE Null:", mse_null)
-    # print("MSE Alt:", mse_alt)
-    # print("MSE Alt - MSE Null =", mse_alt - mse_null)
+#     # print("MSE Null:", mse_null)
+#     # print("MSE Alt:", mse_alt)
+#     # print("MSE Alt - MSE Null =", mse_alt - mse_null)
     
-    return mse_alt - mse_null
+#     return mse_alt - mse_null
 
 def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5, verbose=False):
     diff_test_mses = []

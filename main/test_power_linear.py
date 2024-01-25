@@ -1,12 +1,15 @@
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
 import numpy as np
 import pandas as pd
 import random
 import os
 from datetime import datetime
 import pickle
+import xgboost as xgb
+
 
 # Global variables
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -16,8 +19,34 @@ FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"TEST_POWER_LINEAR_RESULT_{timestamp}.csv"
 ITERS_PER_SAMPLE_SIZE = 100
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
+
 ML_MODEL = LinearRegression()
 PARAM_GRID = {}
+
+# Instantiate an XGBoost regressor object
+# ML_MODEL = xgb.XGBRegressor(objective ='reg:squarederror')
+
+# Define a parameter grid to search over (example parameters)
+# PARAM_GRID = {
+#     'max_depth': [3, 10],
+#     'learning_rate': [0.01, 0.1, 0.2],
+#     'subsample': [0.7, 1]
+# }
+
+# ML_MODEL = RandomForestRegressor()
+# PARAM_GRID = {
+#         'n_estimators': [100],  
+#         'max_depth': [None, 20],
+#         'min_samples_split': [2, 10]
+#     }
+
+# ML_MODEL = DecisionTreeRegressor()
+# PARAM_GRID = {
+#     'max_depth': [None, 10], 
+#     'min_samples_split': [2, 10],
+#     'min_samples_leaf': [1, 5]
+# }
+
 DATA_SOURCE = "../data/simulation/"
 
 def main():
@@ -30,8 +59,8 @@ def main():
     if not os.path.exists(FILENAME_TO_SAVE):
         pd.DataFrame(columns=columns).to_csv(FILENAME_TO_SAVE, index=False)
 
-    true_models = ["UBU", "BBU", "UBB", "BBB"]
-    effective_sample_sizes = [500, 1000, 2000]
+    true_models = ["BBU", "UBU", "UBB", "BBB"]
+    effective_sample_sizes = [5000]
 
     # read in network.pkl # fix this using DATA_SOURCE11
     with open(os.path.join(DATA_SOURCE, 'network.pkl'), 'rb') as file:
