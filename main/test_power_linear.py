@@ -16,7 +16,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"TEST_POWER_LINEAR_RESULT_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 100
+ITERS_PER_SAMPLE_SIZE = 20 #100
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
 
