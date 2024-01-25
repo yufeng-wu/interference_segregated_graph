@@ -1,10 +1,5 @@
 # Generate a network with at least 5000 elements 5-independent set
 
-# first generate UBU
-# next generate UBB
-# next generate BBB
-# next generate BBU
-
 from util import create_random_network
 import data_generator as dg
 from maximal_independent_set import maximal_n_apart_independent_set
@@ -56,6 +51,10 @@ def create_network_and_ind_set(sample_size):
 
 
 def main():
+    # first generate UBU
+    # next generate UBB
+    # next generate BBB
+    # next generate BBU
     true_models = ["UBU", "BBU", "UBB", "BBB"]
     effective_sample_size = 5000
 

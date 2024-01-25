@@ -22,8 +22,8 @@ VERBOSE = True
 ML_MODEL = RandomForestRegressor() 
 PARAM_GRID = {
     'n_estimators': [100, 500],  
-    'max_depth': [None, 20]#,
-    #'min_samples_split': [2, 10]
+    'max_depth': [None, 20],
+    'min_samples_split': [2, 10]
 }
 
 

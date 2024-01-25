@@ -9,6 +9,8 @@ References:
 - Maximal Independent Set algorithm implementation: https://www.geeksforgeeks.org/maximal-independent-set-in-an-undirected-graph/#
 '''
 
+from util import create_random_network
+
 # from collections import deque
 # import random
 
@@ -151,7 +153,9 @@ def maximal_n_apart_independent_set(graph, n, verbose=False):
         if verbose and len(active_nodes) % 1000 < 2:
             print("[PROGRESS] maximal_n_apart_independent_set need to process", len(active_nodes), "more nodes.") 
         #current_vertex = random.choice(tuple(active_nodes))  # Choose a vertex from active nodes
+        print(active_nodes)
         current_vertex = active_nodes.pop()
+        print(current_vertex)
 		# active_nodes.remove(current_vertex)
         independent_set.add(current_vertex)
 
@@ -162,14 +166,14 @@ def maximal_n_apart_independent_set(graph, n, verbose=False):
     return independent_set
 
 if __name__ == '__main__':
-    # cycle_UG = create_cycle_UG(1000)
+    g = create_random_network(n=100, min_neighbors=1, max_neighbors=6)
 
-    # n = 5
-    # result = maximal_n_apart_independent_set(cycle_UG, n, set(cycle_UG.keys()), approx=True)
+    n = 5
+    result = maximal_n_apart_independent_set(g, n, True)
     # print("Maximal ", n, "-apart independent set: ", result)
     # print("Length: ", len(result))
     # print("Best possible length: ", len(cycle_UG.keys())//6)
-    pass
+    print(result)
 
 
 # big picture:
