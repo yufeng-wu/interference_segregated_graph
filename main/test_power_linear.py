@@ -60,7 +60,7 @@ def main():
         pd.DataFrame(columns=columns).to_csv(FILENAME_TO_SAVE, index=False)
 
     true_models = ["BBU", "UBU", "UBB", "BBB"]
-    effective_sample_sizes = [5000]
+    effective_sample_sizes = [100, 500, 1000, 2000, 5000]
 
     # read in network.pkl # fix this using DATA_SOURCE11
     with open(os.path.join(DATA_SOURCE, 'network.pkl'), 'rb') as file:
