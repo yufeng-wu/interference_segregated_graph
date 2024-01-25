@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import LinearRegression
 
 def prepare_data(dataset, ind_set, network):
     '''
@@ -44,6 +45,21 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     
     Return the test accuracy of alternative model minus that of the null model.
     '''
+
+    # If the model is a linear regression model, we won't do train-test split 
+    # and parameter tuning.
+    if isinstance(model, LinearRegression):
+
+        # train null and alternative models directly on the entire dataset 
+        # and calculate MSE for both models.
+        null_model = model.fit(X[null_predictors], y)
+        mse_null = mean_squared_error(y, null_model.predict(X[null_predictors]))
+
+        alt_model = model.fit(X[alt_predictors], y)
+        mse_alt = mean_squared_error(y, alt_model.predict(X[alt_predictors]))
+        
+        return mse_alt - mse_null
+
     # prepare training and testing set
     y = y.astype(float)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
@@ -83,7 +99,7 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
     
     for i in range(bootstrap_iter):
         if verbose and i % 10 == 0:
-            print(i)
+            print("testing iteration:", i)
         # Bootstrap (sample w replacement) a new dataset from the original X, y
         bootstrapped_combined = combined.sample(n=len(combined), replace=True, random_state=i)
 
