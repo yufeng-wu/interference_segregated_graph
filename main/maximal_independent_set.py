@@ -153,9 +153,7 @@ def maximal_n_apart_independent_set(graph, n, verbose=False):
         if verbose and len(active_nodes) % 1000 < 2:
             print("[PROGRESS] maximal_n_apart_independent_set need to process", len(active_nodes), "more nodes.") 
         #current_vertex = random.choice(tuple(active_nodes))  # Choose a vertex from active nodes
-        print(active_nodes)
         current_vertex = active_nodes.pop()
-        print(current_vertex)
 		# active_nodes.remove(current_vertex)
         independent_set.add(current_vertex)
 
