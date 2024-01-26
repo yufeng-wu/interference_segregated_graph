@@ -161,7 +161,11 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
         
         return mse_alt - mse_null
 
-    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=model, 
+                               param_grid=param_grid, 
+                               cv=5, 
+                               n_jobs=-1, 
+                               scoring="neg_mean_squared_error")
  
     grid_search.fit(X_train[null_predictors], y_train)
     best_null_model = grid_search.best_estimator_
