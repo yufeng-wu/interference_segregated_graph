@@ -1,9 +1,9 @@
-Data in this folder is generated using the following setup:
+Configuration of the dataset generation process:
 
 ```python
 MIN_NB = 1
 MAX_NB = 6
-BURN_IN = 200
+BURN_IN = 1000
 VERBOSE = True
 
 def generate_edge_types(true_model):
