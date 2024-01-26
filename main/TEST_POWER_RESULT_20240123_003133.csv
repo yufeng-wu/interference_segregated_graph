@@ -1,3 +1,0 @@
-true_model,network_size,effective_sample_size,min_neighbors,max_neighbors,burn_in_(if_applies),bootstrap_iters,ML_model_name,tuning_param_grid,L_lower,L_upper,L_result,A_lower,A_upper,A_result,Y_lower,Y_upper,Y_result
-UUU,4000,100,1,6,1,5,RandomForestRegressor,{'n_estimators': [100]},-0.41372953005451146,0.5520661477328244,U,-0.14044046646292083,0.19332927133580868,U,-0.4562874440137766,0.12357633730888372,U
-BUU,4000,100,1,6,1,5,RandomForestRegressor,{'n_estimators': [100]},-14.72456936674634,6.086976772371794,U,-0.14230217259232905,0.03653085699294422,U,-0.07215232438129797,0.17133484686534894,U
