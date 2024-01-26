@@ -1,7 +1,5 @@
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-import numpy as np
 import pandas as pd
 import random
 import os
@@ -13,19 +11,12 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"FINAL_TEST_LINEAR_RESULT_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 25
+ITERS_PER_SAMPLE_SIZE = 20
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
 
 ML_MODEL = LinearRegression()
 PARAM_GRID = {}
-
-# ML_MODEL = RandomForestRegressor()
-# PARAM_GRID = {
-#         'n_estimators': [10, 50],  
-#         'max_depth': [None, 20],
-#         'min_samples_split': [2, 10]
-#     }
 
 DATA_SOURCE = "../data/simulation/"
 

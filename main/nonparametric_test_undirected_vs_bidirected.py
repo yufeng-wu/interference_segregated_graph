@@ -294,9 +294,10 @@ if __name__ == "__main__":
     ''' STEP 4: Perform nonparametric test '''
     model = RandomForestRegressor() 
     param_grid = {
-        'n_estimators': [100, 200],  
-        'max_depth': [None, 20],
-        'min_samples_split': [2, 10]
+        'n_estimators': [100],  
+        'max_depth': [None, 10],
+        'min_samples_split': [2, 20],
+        'min_samples_leaf': [1, 10]
     }
     lower, upper, result = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
     print("L result: ", lower, upper, result)
