@@ -9,7 +9,7 @@ import pandas as pd
 # Global variables
 MIN_NB = 1
 MAX_NB = 6
-BURN_IN = 500
+BURN_IN = 1000
 VERBOSE = True
 
 def generate_edge_types(true_model):
@@ -59,6 +59,8 @@ def main():
     effective_sample_size = 5000
 
     network, ind_set = create_network_and_ind_set(effective_sample_size)
+    print("size of network is", len(network))
+    print("size of ind set is", len(ind_set))
 
     # save the network and ind_set somewhere
     with open("network.pkl", "wb") as file:
