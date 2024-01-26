@@ -263,20 +263,20 @@ if __name__ == "__main__":
     ''' STEP 1: Greate graph '''
     NUM_OF_VERTICES = 50000
     BURN_IN = 200
-    BOOTSTRAP_ITER = 30
+    BOOTSTRAP_ITER = 40
     VERBOSE = True
     MIN_NB = 1
-    MAX_NB = 5
+    MAX_NB = 6
 
     network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=MIN_NB, max_neighbors=MAX_NB)
 
     ''' STEP 2: Create data '''
-    # edge_types = {'L' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
-    #                'A' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
-    #               'Y' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
-                  'A' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
-                  'Y' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
+    edge_types = {'L' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
+                   'A' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
+                  'Y' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    # edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
+    #               'A' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
+    #               'Y' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
     
     sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
     print("sampling done")
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     ''' STEP 4: Perform nonparametric test '''
     model = RandomForestRegressor() 
     param_grid = {
-        'n_estimators': [10],  
+        'n_estimators': [100, 200],  
         'max_depth': [None, 20],
         'min_samples_split': [2, 10]
     }
