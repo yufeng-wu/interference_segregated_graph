@@ -31,7 +31,7 @@ def main():
         pd.DataFrame(columns=columns).to_csv(FILENAME_TO_SAVE, index=False)
 
     true_models = ["BBU", "UBU", "UBB", "BBB"]
-    effective_sample_sizes = [1000, 2000, 3000, 4000, 5000, 6000]
+    effective_sample_sizes = [500, 1000, 2000, 3000, 4000, 5000]
 
     with open(os.path.join(DATA_SOURCE, 'network.pkl'), 'rb') as file:
         network = pickle.load(file)
