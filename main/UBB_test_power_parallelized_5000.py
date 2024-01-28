@@ -28,22 +28,22 @@ VERBOSE = True
 # PARAM_GRID = {}
 
 # Define the Decision Tree model and parameter grid
-ML_MODEL = DecisionTreeRegressor()
-PARAM_GRID = {
-    'max_depth': [None, 10, 20, 30],  # Expanded range
-    'min_samples_split': [2, 10, 20],
-    'min_samples_leaf': [1, 5, 10],
-    'max_leaf_nodes': [None, 20],
-    'min_impurity_decrease': [0.0, 0.001, 0.01, 0.1]
-}
-
-# ML_MODEL = RandomForestRegressor()
+# ML_MODEL = DecisionTreeRegressor()
 # PARAM_GRID = {
-#     'n_estimators': [100], #[100] ,
-#     'max_depth': [None, 10],
-#     'min_samples_split': [2, 20],
-#     'min_samples_leaf': [1, 20]
+#     'max_depth': [None, 10, 20, 30],  # Expanded range
+#     'min_samples_split': [2, 10, 20],
+#     'min_samples_leaf': [1, 5, 10],
+#     'max_leaf_nodes': [None, 20],
+#     'min_impurity_decrease': [0.0, 0.001, 0.01, 0.1]
 # }
+
+ML_MODEL = RandomForestRegressor()
+PARAM_GRID = {
+    'n_estimators': [100], #[100] ,
+    'max_depth': [None, 10, 20],
+    'min_samples_split': [2, 10, 20],
+    'min_samples_leaf': [1, 10],
+}
 
 DATA_SOURCE = "../data/simulation/"
 
@@ -83,7 +83,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["UBB"]
-    effective_sample_sizes = [3000, 4000, 5000] #[500, 1000, 2000, 3000, 4000, 5000]
+    effective_sample_sizes = [4000, 5000] #[500, 1000, 2000, 3000, 4000, 5000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',
