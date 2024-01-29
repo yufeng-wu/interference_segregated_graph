@@ -41,7 +41,7 @@ PARAM_GRID = {
     'n_estimators': [100, 200],  # Number of boosting stages
     'learning_rate': [0.01, 0.1, 0.2],  # Learning rate shrinks the contribution of each tree
     'max_depth': [3, 5],  # Maximum depth of the individual regression estimators
-    'min_samples_split': [2, 6],  # The minimum number of samples required to split an internal node
+    'min_samples_split': [2, 4, 6],  # The minimum number of samples required to split an internal node
     'min_samples_leaf': [1, 3]  # The minimum number of samples required to be at a leaf node
 }
 
@@ -94,7 +94,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["BBB"] #TODO
-    effective_sample_sizes = [300, 4000, 5000] #[500, 1000, 2000, 3000, 4000, 5000]
+    effective_sample_sizes = [3000, 4000, 5000] #[500, 1000, 2000, 3000, 4000, 5000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',
