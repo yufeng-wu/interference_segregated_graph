@@ -21,29 +21,30 @@ FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"test_UBB_FINAL_TEST_RESULT_{timestamp}.csv"
 
 ITERS_PER_SAMPLE_SIZE = 20
-TEST_BOOTSTRAP_ITERS = 100
+TEST_BOOTSTRAP_ITERS = 10
 VERBOSE = True
 
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
 # Define the Decision Tree model and parameter grid
-# ML_MODEL = DecisionTreeRegressor()
-# PARAM_GRID = {
-#     'max_depth': [None, 10, 20, 30],  # Expanded range
-#     'min_samples_split': [2, 10, 20],
-#     'min_samples_leaf': [1, 5, 10],
-#     'max_leaf_nodes': [None, 20],
-#     'min_impurity_decrease': [0.0, 0.001, 0.01, 0.1]
-# }
-
-ML_MODEL = RandomForestRegressor()
+ML_MODEL = DecisionTreeRegressor()
 PARAM_GRID = {
-    'n_estimators': [100], #[100] ,
-    'max_depth': [None, 10, 20],
+    'max_depth': [None, 10, 20, 50],  # Expanded range
     'min_samples_split': [2, 10, 20],
-    'min_samples_leaf': [1, 10],
+    'min_samples_leaf': [1, 5, 10]
 }
+
+
+# NEED TO FIND A MORE SUITABLE MODEL!!!!
+
+# ML_MODEL = RandomForestRegressor()
+# PARAM_GRID = {
+#     'n_estimators': [100], #[100] ,
+#     'max_depth': [None, 10, 20],
+#     'min_samples_split': [2, 10, 20],
+#     'min_samples_leaf': [1, 10],
+# }
 
 DATA_SOURCE = "../data/simulation/"
 
