@@ -213,11 +213,11 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
 
 def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
     if layer == "L":
-        # null_predictors = ['L_1nb_sum', 'L_1nb_avg']
-        # alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
-        #                   'L_2nb_sum', 'L_2nb_avg']
-        null_predictors = ['L_1nb_sum']
-        alt_predictors = ['L_1nb_sum', 'L_2nb_sum']
+        null_predictors = ['L_1nb_sum', 'L_1nb_avg']
+        alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
+                          'L_2nb_sum', 'L_2nb_avg']
+        # null_predictors = ['L_1nb_sum']
+        # alt_predictors = ['L_1nb_sum', 'L_2nb_sum']
     if layer == "A":
         null_predictors = ['L', 
                            'L_1nb_sum', 'L_1nb_avg', 

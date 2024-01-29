@@ -38,13 +38,13 @@ VERBOSE = True
 
 ML_MODEL = GradientBoostingRegressor()
 PARAM_GRID = {
-    'n_estimators': [100, 200],  # Number of boosting stages
-    'learning_rate': [0.01, 0.1, 0.2],  # Learning rate shrinks the contribution of each tree
-    'max_depth': [3, 5],  # Maximum depth of the individual regression estimators
-    'min_samples_split': [2, 4, 6],  # The minimum number of samples required to split an internal node
-    'min_samples_leaf': [1, 3]  # The minimum number of samples required to be at a leaf node
+    'n_estimators': [100, 300],  # Fewer options for the number of boosting stages
+    'learning_rate': [0.01, 0.1],  # Only two learning rates for simplicity
+    'max_depth': [3, 5],  # Limiting to two depths to balance between complexity and overfitting
+    'min_samples_split': [2, 6],  # A conservative and a more liberal option
+    'min_samples_leaf': [1, 3],  # Two options, one more regularized than the other
+    'subsample': [0.8, 1.0],  # Includes both full and subsampled boosting
 }
-
 
 # NEED TO FIND A MORE SUITABLE MODEL!!!!
 
