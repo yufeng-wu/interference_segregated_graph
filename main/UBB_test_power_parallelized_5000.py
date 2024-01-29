@@ -7,6 +7,7 @@ from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.neighbors import KNeighborsRegressor
 import warnings
 from joblib import parallel_backend
@@ -28,11 +29,20 @@ VERBOSE = True
 # PARAM_GRID = {}
 
 # Define the Decision Tree model and parameter grid
-ML_MODEL = DecisionTreeRegressor()
+# ML_MODEL = DecisionTreeRegressor()
+# PARAM_GRID = {
+#     'max_depth': [None, 10, 20, 50],  # Expanded range
+#     'min_samples_split': [2, 10, 20],
+#     'min_samples_leaf': [1, 5, 10]
+# }
+
+ML_MODEL = GradientBoostingRegressor()
 PARAM_GRID = {
-    'max_depth': [None, 10, 20, 50],  # Expanded range
-    'min_samples_split': [2, 10, 20],
-    'min_samples_leaf': [1, 5, 10]
+    'n_estimators': [100, 200],  # Number of boosting stages
+    'learning_rate': [0.01, 0.1],  # Learning rate shrinks the contribution of each tree
+    'max_depth': [3, 5],  # Maximum depth of the individual regression estimators
+    'min_samples_split': [2, 6],  # The minimum number of samples required to split an internal node
+    'min_samples_leaf': [1, 3]  # The minimum number of samples required to be at a leaf node
 }
 
 
