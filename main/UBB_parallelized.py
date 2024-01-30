@@ -19,7 +19,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"UBB_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 25
+ITERS_PER_SAMPLE_SIZE = 10
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
 
@@ -28,7 +28,7 @@ VERBOSE = True
 
 ML_MODEL = GradientBoostingRegressor()
 PARAM_GRID = {
-    'n_estimators': [100, 300],  # Fewer options for the number of boosting stages
+    'n_estimators': [100],  # Fewer options for the number of boosting stages
     'learning_rate': [0.1],  # Only two learning rates for simplicity
     'max_depth': [5, 10],  # Limiting to two depths to balance between complexity and overfitting
     'subsample': [0.8, 1.0],  # Includes both full and subsampled boosting
@@ -72,7 +72,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["UBB"] 
-    effective_sample_sizes = [500, 1000, 2000, 3000, 4000, 5000]
+    effective_sample_sizes = [2000, 3000, 4000, 5000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',
