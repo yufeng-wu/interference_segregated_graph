@@ -175,11 +175,15 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     best_null_model = grid_search.best_estimator_
     y_pred = best_null_model.predict(X_test[null_predictors])
     mse_null = mean_squared_error(y_test, y_pred)
+
+    print("best params: ", grid_search.best_params_)
     
     grid_search.fit(X_train[alt_predictors], y_train)
     best_alt_model = grid_search.best_estimator_
     y_pred = best_alt_model.predict(X_test[alt_predictors])
     mse_alt = mean_squared_error(y_test, y_pred)
+
+    print("best params: ", grid_search.best_params_)
 
     print("MSE Null:", mse_null)
     print("MSE Alt:", mse_alt)

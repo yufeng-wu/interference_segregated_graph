@@ -39,10 +39,8 @@ VERBOSE = True
 ML_MODEL = GradientBoostingRegressor()
 PARAM_GRID = {
     'n_estimators': [100, 300],  # Fewer options for the number of boosting stages
-    'learning_rate': [0.01, 0.1],  # Only two learning rates for simplicity
-    'max_depth': [3, 5],  # Limiting to two depths to balance between complexity and overfitting
-    'min_samples_split': [2, 6],  # A conservative and a more liberal option
-    'min_samples_leaf': [1, 3],  # Two options, one more regularized than the other
+    'learning_rate': [0.01, 0.1, 0.2],  # Only two learning rates for simplicity
+    'max_depth': [3, 4, 5],  # Limiting to two depths to balance between complexity and overfitting
     'subsample': [0.8, 1.0],  # Includes both full and subsampled boosting
 }
 
