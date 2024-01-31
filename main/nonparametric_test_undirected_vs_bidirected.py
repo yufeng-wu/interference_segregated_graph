@@ -185,9 +185,9 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
 
     # print("best params: ", grid_search.best_params_)
 
-    # print("MSE Null:", mse_null)
-    # print("MSE Alt:", mse_alt)
-    # print("MSE Alt - MSE Null =", mse_alt - mse_null)
+    print("MSE Null:", mse_null)
+    print("MSE Alt:", mse_alt)
+    print("MSE Alt - MSE Null =", mse_alt - mse_null)
     
     return mse_alt - mse_null
 
