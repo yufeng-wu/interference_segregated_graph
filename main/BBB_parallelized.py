@@ -26,12 +26,19 @@ VERBOSE = True
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
-ML_MODEL = GradientBoostingRegressor()
+# ML_MODEL = GradientBoostingRegressor()
+# PARAM_GRID = {
+#     'n_estimators': [100],  # Fewer options for the number of boosting stages
+#     'learning_rate': [0.1],  # Only two learning rates for simplicity
+#     'max_depth': [5, 10],  # Limiting to two depths to balance between complexity and overfitting
+#     'subsample': [0.8, 1.0],  # Includes both full and subsampled boosting
+# }
+
+ML_MODEL = DecisionTreeRegressor()
 PARAM_GRID = {
-    'n_estimators': [100],  # Fewer options for the number of boosting stages
-    'learning_rate': [0.1],  # Only two learning rates for simplicity
-    'max_depth': [5, 10],  # Limiting to two depths to balance between complexity and overfitting
-    'subsample': [0.8, 1.0],  # Includes both full and subsampled boosting
+    'max_depth': [None, 5, 10],  # Maximum depth of the tree
+    'min_samples_split': [2, 10],  # Minimum number of samples required to split an internal node
+    'min_samples_leaf': [1, 4],  # Minimum number of samples required to be at a leaf node
 }
 
 DATA_SOURCE = "../data/simulation/"

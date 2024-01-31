@@ -167,7 +167,7 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
 
     grid_search = GridSearchCV(estimator=model, 
                                param_grid=param_grid, 
-                               cv=5, 
+                               cv=3, 
                                n_jobs=-1, 
                                scoring="neg_mean_squared_error")
  
@@ -176,14 +176,14 @@ def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid,
     y_pred = best_null_model.predict(X_test[null_predictors])
     mse_null = mean_squared_error(y_test, y_pred)
 
-    # print("best params: ", grid_search.best_params_)
+    print("best params: ", grid_search.best_params_)
     
     grid_search.fit(X_train[alt_predictors], y_train)
     best_alt_model = grid_search.best_estimator_
     y_pred = best_alt_model.predict(X_test[alt_predictors])
     mse_alt = mean_squared_error(y_test, y_pred)
 
-    # print("best params: ", grid_search.best_params_)
+    print("best params: ", grid_search.best_params_)
 
     print("MSE Null:", mse_null)
     print("MSE Alt:", mse_alt)
@@ -217,11 +217,11 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
 
 def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
     if layer == "L":
-        null_predictors = ['L_1nb_sum', 'L_1nb_avg']
-        alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
-                          'L_2nb_sum', 'L_2nb_avg']
-        # null_predictors = ['L_1nb_sum']
-        # alt_predictors = ['L_1nb_sum', 'L_2nb_sum']
+        # null_predictors = ['L_1nb_sum', 'L_1nb_avg']
+        # alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
+        #                   'L_2nb_sum', 'L_2nb_avg']
+        null_predictors = ['L_1nb_sum']
+        alt_predictors = ['L_1nb_sum', 'L_2nb_sum']
     if layer == "A":
         null_predictors = ['L', 
                            'L_1nb_sum', 'L_1nb_avg', 
