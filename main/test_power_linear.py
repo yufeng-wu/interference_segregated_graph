@@ -11,8 +11,8 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"FINAL_TEST_LINEAR_RESULT_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 20
-TEST_BOOTSTRAP_ITERS = 100
+ITERS_PER_SAMPLE_SIZE = 100
+TEST_BOOTSTRAP_ITERS = 1000
 VERBOSE = True
 
 ML_MODEL = LinearRegression()
@@ -31,7 +31,7 @@ def main():
         pd.DataFrame(columns=columns).to_csv(FILENAME_TO_SAVE, index=False)
 
     true_models = ["BBU", "UBU", "UBB", "BBB"]
-    effective_sample_sizes = [500, 1000, 2000, 3000, 4000, 5000]
+    effective_sample_sizes = [500, 1000, 2000, 3000, 4000, 5000, 6000]
 
     with open(os.path.join(DATA_SOURCE, 'network.pkl'), 'rb') as file:
         network = pickle.load(file)
