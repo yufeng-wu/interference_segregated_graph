@@ -5,10 +5,17 @@ from scipy.special import expit
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, ParameterGrid
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import LinearRegression
-from itertools import product
+from sklearn.kernel_ridge import KernelRidge
+import warnings
+
+
+
+# Filter out the UserWarning raised by the Ridge model
+warnings.filterwarnings(action='ignore', category=UserWarning, module='sklearn.linear_model._ridge')
+
 
 def prepare_data(dataset, ind_set, network):
     '''
@@ -127,90 +134,164 @@ def prepare_data(dataset, ind_set, network):
 #     return mse_alt_test - mse_null_test
 
 
-def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid, test_size=0.2, random_state=0):
-    '''
-    Using random forest classifier with grid search for parameter tuning to 
-    train a null model using null_predictors and an alternative model using 
-    alt_predictors. 
+# def diff_test_accuracy(X, y, null_predictors, alt_predictors, model, param_grid, test_size=0.3, random_state=0):
+#     '''
+#     Using random forest classifier with grid search for parameter tuning to 
+#     train a null model using null_predictors and an alternative model using 
+#     alt_predictors. 
     
-    Return the test accuracy of alternative model minus that of the null model.
-    '''
+#     Return the test accuracy of alternative model minus that of the null model.
+#     '''
 
-    # prepare training and testing set
-    y = y.astype(float)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+#     # prepare training and testing set
+#     y = y.astype(float)
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
-    # Identify overlapping row indices
-    overlapping_indices = set(X_train.index) & set(X_test.index)
+#     # Identify overlapping row indices
+#     overlapping_indices = set(X_train.index) & set(X_test.index)
 
-    # Remove overlapping rows from the training set
-    X_train = X_train.drop(index=overlapping_indices)
-    y_train = y_train.drop(index=overlapping_indices)
+#     # Remove overlapping rows from the training set
+#     X_train = X_train.drop(index=overlapping_indices)
+#     y_train = y_train.drop(index=overlapping_indices)
+#     print(X_train.index)
+#     print(len(list(X_train.index)), len(set(X_train.index)))
 
-    # Convert the type of Y
-    y_train = np.ravel(y_train)
-    y_test = np.ravel(y_test)
+#     # Convert the type of Y
+#     y_train = np.ravel(y_train)
+#     y_test = np.ravel(y_test)
 
-    # If the model is a linear regression model, skip parameter tuning
-    if isinstance(model, LinearRegression):
-        null_model = model.fit(X_train[null_predictors], y_train)
-        mse_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
+#     # If the model is a linear regression model, skip parameter tuning
+#     if isinstance(model, LinearRegression):
+#         null_model = model.fit(X_train[null_predictors], y_train)
+#         mse_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
 
-        alt_model = model.fit(X_train[alt_predictors], y_train)
-        mse_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
+#         alt_model = model.fit(X_train[alt_predictors], y_train)
+#         mse_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
         
-        # print("MSE Null:", mse_null)
-        # print("MSE Alt:", mse_alt)
-        # print("MSE Alt - MSE Null =", mse_alt - mse_null)
+#         # print("MSE Null:", mse_null)
+#         # print("MSE Alt:", mse_alt)
+#         # print("MSE Alt - MSE Null =", mse_alt - mse_null)
         
-        return mse_alt - mse_null
+#         return mse_alt - mse_null
 
-    grid_search = GridSearchCV(estimator=model, 
-                               param_grid=param_grid, 
-                               cv=3, 
-                               n_jobs=-1, 
-                               scoring="neg_mean_squared_error")
+#     grid_search = GridSearchCV(estimator=model, 
+#                                param_grid=param_grid, 
+#                                cv=10, 
+#                                n_jobs=-1, 
+#                                scoring="neg_mean_squared_error")
  
-    grid_search.fit(X_train[null_predictors], y_train)
-    best_null_model = grid_search.best_estimator_
-    y_pred = best_null_model.predict(X_test[null_predictors])
-    mse_null = mean_squared_error(y_test, y_pred)
+#     grid_search.fit(X_train[null_predictors], y_train)
 
-    print("best params: ", grid_search.best_params_)
+#     print("\nAll results:")
+#     for mean_score, params in zip(grid_search.cv_results_['mean_test_score'], grid_search.cv_results_['params']):
+#         print("Mean squared error: {:.3f} for {}".format(-mean_score, params))
+
+
+#     best_null_model = grid_search.best_estimator_
+#     y_pred = best_null_model.predict(X_test[null_predictors])
+#     mse_null = mean_squared_error(y_test, y_pred)
+
+#     print("best params: ", grid_search.best_params_)
     
-    grid_search.fit(X_train[alt_predictors], y_train)
-    best_alt_model = grid_search.best_estimator_
-    y_pred = best_alt_model.predict(X_test[alt_predictors])
-    mse_alt = mean_squared_error(y_test, y_pred)
+#     grid_search.fit(X_train[alt_predictors], y_train)
 
-    print("best params: ", grid_search.best_params_)
+#     print("\nAll results:")
+#     for mean_score, params in zip(grid_search.cv_results_['mean_test_score'], grid_search.cv_results_['params']):
+#         print("Mean squared error: {:.3f} for {}".format(-mean_score, params))
 
-    print("MSE Null:", mse_null)
-    print("MSE Alt:", mse_alt)
-    print("MSE Alt - MSE Null =", mse_alt - mse_null)
+#     best_alt_model = grid_search.best_estimator_
+#     y_pred = best_alt_model.predict(X_test[alt_predictors])
+#     mse_alt = mean_squared_error(y_test, y_pred)
+
+#     print("best params: ", grid_search.best_params_)
+
+#     print("MSE Null:", mse_null)
+#     print("MSE Alt:", mse_alt)
+#     print("MSE Alt - MSE Null =", mse_alt - mse_null)
     
-    return mse_alt - mse_null
+#     return mse_alt - mse_null
 
-def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid, bootstrap_iter=100, percentile_lower=2.5, percentile_upper=97.5, verbose=False):
+
+def _tune_hyperparams(X_train, y_train, X_val, y_val, predictors, model, param_grid):
+    """
+    Find the best hyperparameters using the validation set.
+    """
+    best_mse = float('inf')
+    best_params = None
+    
+    for params in ParameterGrid(param_grid):
+        model.set_params(**params)
+        model.fit(X_train[predictors], np.ravel(y_train))
+        mse_val = mean_squared_error(y_val, model.predict(X_val[predictors]))
+        if mse_val < best_mse:
+            best_mse = mse_val
+            best_params = params
+    return best_params, best_mse
+
+def _train_and_eval(X_train, y_train, X_test, y_test, predictors, model, best_params):
+    """
+    Train the model with the best parameters and evaluate on the test set.
+    """
+    model.set_params(**best_params)
+    model.fit(X_train[predictors], np.ravel(y_train))
+    return mean_squared_error(y_test, model.predict(X_test[predictors]))
+
+def diff_test_accuracy(X_train, y_train, X_val, y_val, X_test, y_test, 
+                       null_predictors, alt_predictors, model, param_grid):
+    """
+    Train a null model and an alternative model. 
+    Calculate and return the difference in test MSE.
+    """
+    best_params_null, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
+                                            null_predictors, model, param_grid)
+    mse_test_null = _train_and_eval(X_train, y_train, X_test, y_test, 
+                                    null_predictors, model, best_params_null)
+
+    best_params_alt, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
+                                           alt_predictors, model, param_grid)
+    mse_test_alt = _train_and_eval(X_train, y_train, X_test, y_test, 
+                                   alt_predictors, model, best_params_alt)
+
+    print("MSE Test Null:", mse_test_null)
+    print("MSE Test Alt:", mse_test_alt)
+    print("MSE Test Alt - MSE Test Null =", mse_test_alt - mse_test_null)
+
+    return mse_test_alt - mse_test_null
+
+def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
+                        test_size=0.2, val_size=0.2, bootstrap_iter=100, 
+                        percentile_lower=2.5, percentile_upper=97.5, verbose=False):
     diff_test_mses = []
-    combined = pd.concat([X, y], axis=1)
+
+    X_train_val, X_test, y_train_val, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_val, y_train_val, test_size=val_size, random_state=42)
+    
+    combined_train = pd.concat([X_train, y_train], axis=1)
     
     for i in range(bootstrap_iter):
         if verbose and i % 10 == 0:
             print("testing iteration:", i)
-        # Bootstrap (sample w replacement) a new dataset from the original X, y
-        bootstrapped_combined = combined.sample(n=len(combined), replace=True, random_state=i)
 
-        bootstrapped_X = bootstrapped_combined[X.columns]
-        bootstrapped_y = bootstrapped_combined[y.columns]
+        # Bootstrap (sample with replacement) a new dataset from the training data
+        bootstrapped_combined_train = combined_train.sample(n=len(combined_train), replace=True, random_state=i)
+
+        bootstrapped_X_train = bootstrapped_combined_train[X_train.columns]
+        bootstrapped_y_train = bootstrapped_combined_train[y_train.columns]
         
-        # compute the test statistic using the bootstrapped dataset
-        diff_test_mse = diff_test_accuracy(bootstrapped_X, bootstrapped_y, 
+        # Compute the test statistic
+        diff_test_mse = diff_test_accuracy(X_train=bootstrapped_X_train, 
+                                           y_train=bootstrapped_y_train, 
+                                           X_val=X_val, 
+                                           y_val=y_val, 
+                                           X_test=X_test, 
+                                           y_test=y_test,
                                            null_predictors=null_predictors, 
                                            alt_predictors=alt_predictors,
                                            model=model, 
-                                           param_grid=param_grid,
-                                           random_state=i)
+                                           param_grid=param_grid)
+        
         diff_test_mses.append(diff_test_mse)
     
     return np.percentile(diff_test_mses, [percentile_lower, percentile_upper])
@@ -220,8 +301,6 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
         null_predictors = ['L_1nb_sum', 'L_1nb_avg']
         alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
                           'L_2nb_sum', 'L_2nb_avg']
-        # null_predictors = ['L_1nb_sum']
-        # alt_predictors = ['L_1nb_sum', 'L_2nb_sum']
     if layer == "A":
         null_predictors = ['L', 
                            'L_1nb_sum', 'L_1nb_avg', 
@@ -275,7 +354,7 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
 
 if __name__ == "__main__":
     ''' STEP 1: Greate graph '''
-    NUM_OF_VERTICES = 50000
+    NUM_OF_VERTICES = 100000
     BURN_IN = 200
     BOOTSTRAP_ITER = 40
     VERBOSE = True
@@ -285,12 +364,12 @@ if __name__ == "__main__":
     network = create_random_network(n=NUM_OF_VERTICES, min_neighbors=MIN_NB, max_neighbors=MAX_NB)
 
     ''' STEP 2: Create data '''
-    edge_types = {'L' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
-                   'A' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
-                  'Y' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
-    # edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
-    #               'A' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}],
-    #               'Y' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]}
+    # edge_types = {'L' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
+    #                'A' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}],
+    #               'Y' : ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]}
+    edge_types = {'L' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_non_linear}],
+                  'A' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_non_linear}],
+                  'Y' : ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_non_linear}]}
     
     sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
     print("sampling done")
@@ -302,12 +381,20 @@ if __name__ == "__main__":
     df = prepare_data(sample, ind_set, network)
 
     ''' STEP 4: Perform nonparametric test '''
-    model = RandomForestRegressor() 
+    # model = RandomForestRegressor() 
+    # param_grid = {
+    #     'n_estimators': [100],  
+    #     'max_depth': [None, 10],
+    #     'min_samples_split': [2, 20],
+    #     'min_samples_leaf': [1, 10]
+    # }
+    model = KernelRidge()
     param_grid = {
-        'n_estimators': [100],  
-        'max_depth': [None, 10],
-        'min_samples_split': [2, 20],
-        'min_samples_leaf': [1, 10]
+        'alpha': [0.1, 1.0, 10.0],
+        'kernel': ['linear', 'poly', 'rbf'],
+        'degree': [2, 3],  # For polynomial kernel
+        'coef0': [0.1, 1.0],  # For polynomial kernel
+        'gamma': [0.01, 0.1, 1.0],  # For RBF kernel
     }
     lower, upper, result = test_edge_type(layer="L", dataset=df, bootstrap_iter=BOOTSTRAP_ITER, model=model, param_grid=param_grid, verbose=VERBOSE)
     print("L result: ", lower, upper, result)

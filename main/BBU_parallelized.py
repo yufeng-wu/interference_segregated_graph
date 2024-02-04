@@ -7,9 +7,7 @@ from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.ensemble import GradientBoostingRegressor
 import warnings
-from joblib import parallel_backend
 
 # Filter out the UserWarning related to nested parallelism
 warnings.filterwarnings('ignore', category=UserWarning, message='.*Loky-backed parallel loops cannot be called in a multiprocessing.*')
@@ -19,19 +17,19 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"BBU_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 10
+ITERS_PER_SAMPLE_SIZE = 20
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
 
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
-ML_MODEL = GradientBoostingRegressor()
+ML_MODEL = RandomForestRegressor()
 PARAM_GRID = {
-    'n_estimators': [100],  # Fewer options for the number of boosting stages
-    'learning_rate': [0.1],  # Only two learning rates for simplicity
-    'max_depth': [5, 10],  # Limiting to two depths to balance between complexity and overfitting
-    'subsample': [0.8, 1.0],  # Includes both full and subsampled boosting
+    'n_estimators': [100], 
+    'max_depth': [None, 15, 30], 
+    'min_samples_split': [2, 3, 4], 
+    'min_samples_leaf': [1]
 }
 
 DATA_SOURCE = "../data/simulation/"

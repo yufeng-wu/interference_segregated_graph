@@ -188,6 +188,26 @@ def f_1(pa_values):
     noise = np.random.normal(0, 1)
     return weighted_sum + noise
 
+def f_non_linear(pa_values):
+    weighted_sum = 0
+    weights = {
+        'U_values': 5,
+        'L_self': 0.2,
+        'A_self': -0.3,
+        'L_neighbors': 0.1,
+        'A_neighbors': -0.2
+    }
+
+    for key, values in pa_values.items():
+        if values is not None and values != []:
+            if isinstance(values, list):
+                weighted_sum += weights[key] * (sum(values)) ** 2
+            else:
+                weighted_sum += weights[key] * (values) ** 2
+    
+    noise = np.random.normal(0, 1)
+    return weighted_sum + noise
+
 def f_binary(pa_values):
     weighted_sum = 0
     weights = {

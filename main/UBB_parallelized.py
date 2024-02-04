@@ -7,11 +7,7 @@ from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.neighbors import KNeighborsRegressor
 import warnings
-from joblib import parallel_backend
 
 # Filter out the UserWarning related to nested parallelism
 warnings.filterwarnings('ignore', category=UserWarning, message='.*Loky-backed parallel loops cannot be called in a multiprocessing.*')
@@ -21,7 +17,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"UBB_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 3#10
+ITERS_PER_SAMPLE_SIZE = 20
 TEST_BOOTSTRAP_ITERS = 100
 VERBOSE = True
 
@@ -74,7 +70,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["UBB"] 
-    effective_sample_sizes = [5000]
+    effective_sample_sizes = [2000, 3000, 4000, 5000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',
