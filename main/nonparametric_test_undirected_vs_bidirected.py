@@ -221,6 +221,7 @@ def _tune_hyperparams(X_train, y_train, X_val, y_val, predictors, model, param_g
         if mse_val < best_mse:
             best_mse = mse_val
             best_params = params
+    print(best_params)
     return best_params, best_mse
 
 def _train_and_eval(X_train, y_train, X_test, y_test, predictors, model, best_params):
@@ -237,15 +238,24 @@ def diff_test_accuracy(X_train, y_train, X_val, y_val, X_test, y_test,
     Train a null model and an alternative model. 
     Calculate and return the difference in test MSE.
     """
-    best_params_null, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
-                                            null_predictors, model, param_grid)
-    mse_test_null = _train_and_eval(X_train, y_train, X_test, y_test, 
-                                    null_predictors, model, best_params_null)
+    # If the model is a linear regression model, skip parameter tuning
+    if isinstance(model, LinearRegression):
+        null_model = model.fit(X_train[null_predictors], y_train)
+        mse_test_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
 
-    best_params_alt, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
-                                           alt_predictors, model, param_grid)
-    mse_test_alt = _train_and_eval(X_train, y_train, X_test, y_test, 
-                                   alt_predictors, model, best_params_alt)
+        alt_model = model.fit(X_train[alt_predictors], y_train)
+        mse_test_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
+        
+    else:
+        best_params_null, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
+                                                null_predictors, model, param_grid)
+        mse_test_null = _train_and_eval(X_train, y_train, X_test, y_test, 
+                                        null_predictors, model, best_params_null)
+
+        best_params_alt, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
+                                            alt_predictors, model, param_grid)
+        mse_test_alt = _train_and_eval(X_train, y_train, X_test, y_test, 
+                                    alt_predictors, model, best_params_alt)
 
     print("MSE Test Null:", mse_test_null)
     print("MSE Test Alt:", mse_test_alt)

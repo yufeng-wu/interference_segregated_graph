@@ -27,11 +27,18 @@ VERBOSE = True
 
 ML_MODEL = KernelRidge()
 PARAM_GRID = {
-    'alpha': [0.1, 1, 10],  # Regularization strength
-    'kernel': ['linear', 'poly', 'rbf'],  # Type of kernel
-    'gamma': [None, 0.1, 1],  # Kernel coefficient for 'rbf', 'poly' and 'sigmoid'
-    'degree': [2, 3],  # Degree of the polynomial kernel function ('poly'). Ignored by other kernels.
+    'alpha': [1, 10],
+    'kernel': ['rbf', 'poly'],
+    'gamma': [0.1, 1],
+    'degree': [2, 3]
 }
+
+# PARAM_GRID = {
+#     'alpha': [0.1, 1, 10],  # Regularization strength
+#     'kernel': ['linear', 'poly', 'rbf'],  # Type of kernel
+#     'gamma': [None, 0.1, 1],  # Kernel coefficient for 'rbf', 'poly' and 'sigmoid'
+#     'degree': [2, 3],  # Degree of the polynomial kernel function ('poly'). Ignored by other kernels.
+# }
 
 # ML_MODEL = RandomForestRegressor()
 # PARAM_GRID = {
