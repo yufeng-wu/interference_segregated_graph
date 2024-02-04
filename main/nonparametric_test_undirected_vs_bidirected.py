@@ -1,21 +1,17 @@
 from util import create_random_network, kth_order_neighborhood
 import data_generator as dg
 from maximal_independent_set import maximal_n_apart_independent_set
-from scipy.special import expit
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split, GridSearchCV, ParameterGrid
+from sklearn.model_selection import train_test_split, ParameterGrid
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import LinearRegression
 from sklearn.kernel_ridge import KernelRidge
 import warnings
 
-
-
 # Filter out the UserWarning raised by the Ridge model
 warnings.filterwarnings(action='ignore', category=UserWarning, module='sklearn.linear_model._ridge')
-
 
 def prepare_data(dataset, ind_set, network):
     '''
@@ -217,8 +213,7 @@ def _tune_hyperparams(X_train, y_train, X_val, y_val, predictors, model, param_g
     Find the best hyperparameters using the validation set.
     """
     best_mse = float('inf')
-    best_params = None
-    
+    best_params = None  
     for params in ParameterGrid(param_grid):
         model.set_params(**params)
         model.fit(X_train[predictors], np.ravel(y_train))

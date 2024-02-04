@@ -7,6 +7,7 @@ from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.kernel_ridge import KernelRidge 
 import warnings
 
 # Filter out the UserWarning related to nested parallelism
@@ -24,13 +25,21 @@ VERBOSE = True
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
-ML_MODEL = RandomForestRegressor()
+ML_MODEL = KernelRidge()
 PARAM_GRID = {
-    'n_estimators': [100], 
-    'max_depth': [None, 15, 30], 
-    'min_samples_split': [2, 3, 4], 
-    'min_samples_leaf': [1]
+    'alpha': [0.1, 1, 10],  # Regularization strength
+    'kernel': ['linear', 'poly', 'rbf'],  # Type of kernel
+    'gamma': [None, 0.1, 1],  # Kernel coefficient for 'rbf', 'poly' and 'sigmoid'
+    'degree': [2, 3],  # Degree of the polynomial kernel function ('poly'). Ignored by other kernels.
 }
+
+# ML_MODEL = RandomForestRegressor()
+# PARAM_GRID = {
+#     'n_estimators': [30, 100], 
+#     'max_depth': [None, 15, 30], 
+#     'min_samples_split': [2, 4], 
+#     'min_samples_leaf': [1]
+# }
 
 DATA_SOURCE = "../data/simulation/"
 
@@ -69,7 +78,7 @@ def process_iteration(params):
     }
 
 def main():
-    true_models = ["UBB"] 
+    true_models = ["BBB"] 
     effective_sample_sizes = [2000, 3000, 4000, 5000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
