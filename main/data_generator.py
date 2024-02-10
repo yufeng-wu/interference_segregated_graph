@@ -303,3 +303,29 @@ def sample_given_boundary_continuous(boundary_values):
                 weighted_sum += weights[key] * values
 
     return weighted_sum + np.random.normal(0, 1)
+
+
+def sample_given_boundary_binary(boundary_values):
+    '''
+    Note: This can't be any random function. 
+          Check Lauritzen chain graph paper page 342.
+    '''
+    weighted_sum = 0
+    weights = {
+        'Y_neighbors': -0.1, # this need to be controlled
+        'L_self': 0.8,
+        'A_self': 1.7,
+        'L_neighbors': -0.1, # this need to be controlled
+        'A_neighbors': -0.1 # this need to be controlled
+    }
+    
+    for key, values in boundary_values.items():
+        if values is not None and values != []:
+            if isinstance(values, list):
+                weighted_sum += weights[key] * sum(values)
+            else:
+                weighted_sum += weights[key] * values
+
+    noise = np.random.normal(0, 0.1)
+    p = expit(weighted_sum + noise)
+    return int(np.random.uniform() < p)
