@@ -225,7 +225,7 @@ def f_binary(pa_values):
             else:
                 weighted_sum += weights[key] * values
     
-    noise = np.random.normal(0, 1)
+    noise = np.random.normal(0, 0.1)
     p = expit(weighted_sum + noise)
     return int(np.random.uniform() < p)
 
