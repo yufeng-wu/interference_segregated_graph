@@ -6,7 +6,7 @@ import pickle
 from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.kernel_ridge import KernelRidge 
 import warnings
 
@@ -25,18 +25,17 @@ VERBOSE = True
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
-# ML_MODEL = RandomForestRegressor()
-# PARAM_GRID = {
-#     'n_estimators': [100], 
-#     'max_depth': [None, 15, 30], 
-#     'min_samples_split': [2, 3, 4], 
-#     'min_samples_leaf': [1]
-# }
-
-ML_MODEL = LogisticRegression()
+ML_MODEL = RandomForestClassifier()
 PARAM_GRID = {
-    'C': [0.01, 0.1, 1, 10, 100]
+    'n_estimators': [100], 
+    'max_depth': [None, 20], 
+    'min_samples_split': [2, 4]
 }
+
+# ML_MODEL = LogisticRegression()
+# PARAM_GRID = {
+#     'C': [0.01, 0.1, 1, 10, 100]
+# }
 
 # ML_MODEL = KernelRidge()
 # PARAM_GRID = {
