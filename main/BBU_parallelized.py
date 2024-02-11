@@ -19,23 +19,26 @@ FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"BBU_{timestamp}.csv"
 
 ITERS_PER_SAMPLE_SIZE = 20
-TEST_BOOTSTRAP_ITERS = 100
+TEST_BOOTSTRAP_ITERS = 200
 VERBOSE = True
 
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
-ML_MODEL = RandomForestClassifier()
+# ML_MODEL = RandomForestClassifier()
+# PARAM_GRID = {
+#     'n_estimators': [100], 
+#     'max_depth': [None, 20], 
+#     'min_samples_split': [2, 4]
+# }
+
+ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'n_estimators': [100], 
-    'max_depth': [None, 20], 
-    'min_samples_split': [2, 4]
+    'C': [0.01, 0.1, 1, 10, 100],
+    'penalty': ['l1', 'l2', 'elasticnet', 'none'],
+    'solver': ['liblinear', 'saga', 'lbfgs']
 }
 
-# ML_MODEL = LogisticRegression()
-# PARAM_GRID = {
-#     'C': [0.01, 0.1, 1, 10, 100]
-# }
 
 # ML_MODEL = KernelRidge()
 # PARAM_GRID = {
@@ -89,7 +92,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["BBU"] 
-    effective_sample_sizes = [5000, 6000] #[2000, 3000, 4000, 5000]
+    effective_sample_sizes = [7000] #[2000, 3000, 4000, 5000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',
