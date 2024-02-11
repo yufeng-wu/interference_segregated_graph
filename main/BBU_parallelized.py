@@ -18,7 +18,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"BBU_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 20
+ITERS_PER_SAMPLE_SIZE = 10
 TEST_BOOTSTRAP_ITERS = 200
 VERBOSE = True
 
@@ -34,7 +34,7 @@ VERBOSE = True
 
 ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'C': [0.01, 0.1, 1, 10, 100],
+    'C': [0.0001, 0.001, 0.01, 0.1, 1],
     'penalty': ['l1', 'l2'],  # 'liblinear' supports 'l1' and 'l2'
     'solver': ['liblinear']
 }
@@ -71,8 +71,8 @@ def process_iteration(params):
     ind_set = random.sample(ind_set_full, sample_size)
     df = prepare_data(GM_sample, ind_set, network)
 
-    L_lower, L_upper, L_result = test_edge_type(layer="L", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
-    Y_lower, Y_upper, Y_result = test_edge_type(layer="Y", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
+    L_lower, L_upper, L_result = test_edge_type(layer="L", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE, is_classification=True)
+    Y_lower, Y_upper, Y_result = test_edge_type(layer="Y", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE, is_classification=True)
 
     return {
         'true_model': true_model,
@@ -92,7 +92,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["BBU"] 
-    effective_sample_sizes = [7000] #[2000, 3000, 4000, 5000]
+    effective_sample_sizes = [2000, 3000, 4000, 5000, 6000, 7000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',

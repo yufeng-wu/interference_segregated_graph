@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, ParameterGrid
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.linear_model import LinearRegression
 from sklearn.kernel_ridge import KernelRidge
 import warnings
@@ -208,32 +208,56 @@ def prepare_data(dataset, ind_set, network):
 #     return mse_alt - mse_null
 
 
-def _tune_hyperparams(X_train, y_train, X_val, y_val, predictors, model, param_grid):
+def _tune_hyperparams(X_train, y_train, X_val, y_val, predictors, 
+                      model, param_grid, is_classification):
     """
     Find the best hyperparameters using the validation set.
     """
-    best_mse = float('inf')
-    best_params = None  
+    
+    best_params = None
+
+    if is_classification:
+        best_score = 0
+        evaluation_function = accuracy_score
+    else:
+        best_score = float('inf')
+        evaluation_function = mean_squared_error
+
     for params in ParameterGrid(param_grid):
         model.set_params(**params)
         model.fit(X_train[predictors], np.ravel(y_train))
-        mse_val = mean_squared_error(y_val, model.predict(X_val[predictors]))
-        if mse_val < best_mse:
-            best_mse = mse_val
-            best_params = params
-    print(best_params)
-    return best_params, best_mse
+        val_score = evaluation_function(y_val, model.predict(X_val[predictors]))
 
-def _train_and_eval(X_train, y_train, X_test, y_test, predictors, model, best_params):
+        if is_classification:
+            # for classification, higher the accuracy the better
+            if val_score > best_score:
+                best_score = val_score
+                best_params = params
+        else:
+            # for regression, lower the mse the better
+            if val_score < best_score:
+                best_score = val_score
+                best_params = params  
+
+    print(best_params)
+    return best_params, best_score
+
+def _train_and_eval(X_train, y_train, X_test, y_test, predictors, 
+                    model, best_params, is_classification):
     """
     Train the model with the best parameters and evaluate on the test set.
     """
+    if is_classification:
+        evaluation_function = accuracy_score
+    else:
+        evaluation_function = mean_squared_error
     model.set_params(**best_params)
     model.fit(X_train[predictors], np.ravel(y_train))
-    return mean_squared_error(y_test, model.predict(X_test[predictors]))
+    return evaluation_function(y_test, model.predict(X_test[predictors]))
 
 def diff_test_accuracy(X_train, y_train, X_val, y_val, X_test, y_test, 
-                       null_predictors, alt_predictors, model, param_grid):
+                       null_predictors, alt_predictors, model, param_grid,
+                       is_classification):
     """
     Train a null model and an alternative model. 
     Calculate and return the difference in test MSE.
@@ -241,32 +265,37 @@ def diff_test_accuracy(X_train, y_train, X_val, y_val, X_test, y_test,
     # If the model is a linear regression model, skip parameter tuning
     if isinstance(model, LinearRegression):
         null_model = model.fit(X_train[null_predictors], y_train)
-        mse_test_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
+        score_test_null = mean_squared_error(y_test, null_model.predict(X_test[null_predictors]))
 
         alt_model = model.fit(X_train[alt_predictors], y_train)
-        mse_test_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
+        score_test_alt = mean_squared_error(y_test, alt_model.predict(X_test[alt_predictors]))
         
     else:
         best_params_null, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
-                                                null_predictors, model, param_grid)
-        mse_test_null = _train_and_eval(X_train, y_train, X_test, y_test, 
-                                        null_predictors, model, best_params_null)
+                                                null_predictors, model, param_grid, 
+                                                is_classification)
+        score_test_null = _train_and_eval(X_train, y_train, X_test, y_test, 
+                                        null_predictors, model, best_params_null,
+                                        is_classification)
 
         best_params_alt, _ = _tune_hyperparams(X_train, y_train, X_val, y_val, 
-                                            alt_predictors, model, param_grid)
-        mse_test_alt = _train_and_eval(X_train, y_train, X_test, y_test, 
-                                    alt_predictors, model, best_params_alt)
+                                            alt_predictors, model, param_grid,
+                                            is_classification)
+        score_test_alt = _train_and_eval(X_train, y_train, X_test, y_test, 
+                                    alt_predictors, model, best_params_alt,
+                                    is_classification)
 
-    print("MSE Test Null:", mse_test_null)
-    print("MSE Test Alt:", mse_test_alt)
-    print("MSE Test Alt - MSE Test Null =", mse_test_alt - mse_test_null)
+    print("Score Test Null:", score_test_null)
+    print("Score Test Alt:", score_test_alt)
+    print("Score Test Alt - Score Test Null =", score_test_alt - score_test_null)
 
-    return mse_test_alt - mse_test_null
+    return score_test_alt - score_test_null
 
 def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
                         test_size=0.2, val_size=0.2, bootstrap_iter=100, 
-                        percentile_lower=2.5, percentile_upper=97.5, verbose=False):
-    diff_test_mses = []
+                        percentile_lower=2.5, percentile_upper=97.5, verbose=False,
+                        is_classification=True):
+    diff_test_scores = []
 
     X_train_val, X_test, y_train_val, y_test = train_test_split(
         X, y, test_size=test_size, random_state=42)
@@ -286,7 +315,7 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
         bootstrapped_y_train = bootstrapped_combined_train[y_train.columns]
         
         # Compute the test statistic
-        diff_test_mse = diff_test_accuracy(X_train=bootstrapped_X_train, 
+        diff_test_score = diff_test_accuracy(X_train=bootstrapped_X_train, 
                                            y_train=bootstrapped_y_train, 
                                            X_val=X_val, 
                                            y_val=y_val, 
@@ -295,17 +324,21 @@ def nonparametric_test(X, y, null_predictors, alt_predictors, model, param_grid,
                                            null_predictors=null_predictors, 
                                            alt_predictors=alt_predictors,
                                            model=model, 
-                                           param_grid=param_grid)
+                                           param_grid=param_grid,
+                                           is_classification=is_classification)
         
-        diff_test_mses.append(diff_test_mse)
+        diff_test_scores.append(diff_test_score)
     
-    return np.percentile(diff_test_mses, [percentile_lower, percentile_upper])
+    return np.percentile(diff_test_scores, [percentile_lower, percentile_upper])
 
-def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
+def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose, is_classification):
     if layer == "L":
-        null_predictors = ['L_1nb_sum', 'L_1nb_avg']
-        alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
-                          'L_2nb_sum', 'L_2nb_avg']
+        # null_predictors = ['L_1nb_sum', 'L_1nb_avg']
+        # alt_predictors = ['L_1nb_sum', 'L_1nb_avg', 
+        #                   'L_2nb_sum', 'L_2nb_avg']
+
+        null_predictors = ['L_1nb_sum']
+        alt_predictors = ['L_1nb_sum', 'L_2nb_sum']
     if layer == "A":
         null_predictors = ['L', 
                            'L_1nb_sum', 'L_1nb_avg', 
@@ -318,21 +351,36 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
                           'A_1nb_sum', 'A_1nb_avg',
                           'A_2nb_sum', 'A_2nb_avg']
     if layer == "Y":
+        # null_predictors = ['L', 'A',
+        #                    'L_1nb_sum', 'L_1nb_avg', 
+        #                    'L_2nb_sum', 'L_2nb_avg',
+        #                    'A_1nb_sum', 'A_1nb_avg',
+        #                    'A_2nb_sum', 'A_2nb_avg',
+        #                    'Y_1nb_sum', 'Y_1nb_avg']
+        # alt_predictors = ['L', 'A',
+        #                    'L_1nb_sum', 'L_1nb_avg', 
+        #                    'L_2nb_sum', 'L_2nb_avg',
+        #                    'L_3nb_sum', 'L_3nb_avg',
+        #                    'A_1nb_sum', 'A_1nb_avg',
+        #                    'A_2nb_sum', 'A_2nb_avg',
+        #                    'A_3nb_sum', 'A_3nb_avg',
+        #                    'Y_1nb_sum', 'Y_1nb_avg',
+        #                    'Y_2nb_sum', 'Y_2nb_avg']
         null_predictors = ['L', 'A',
-                           'L_1nb_sum', 'L_1nb_avg', 
-                           'L_2nb_sum', 'L_2nb_avg',
-                           'A_1nb_sum', 'A_1nb_avg',
-                           'A_2nb_sum', 'A_2nb_avg',
-                           'Y_1nb_sum', 'Y_1nb_avg']
+                           'L_1nb_sum',  
+                           'L_2nb_sum', 
+                           'A_1nb_sum', 
+                           'A_2nb_sum', 
+                           'Y_1nb_sum']
         alt_predictors = ['L', 'A',
-                           'L_1nb_sum', 'L_1nb_avg', 
-                           'L_2nb_sum', 'L_2nb_avg',
-                           'L_3nb_sum', 'L_3nb_avg',
-                           'A_1nb_sum', 'A_1nb_avg',
-                           'A_2nb_sum', 'A_2nb_avg',
-                           'A_3nb_sum', 'A_3nb_avg',
-                           'Y_1nb_sum', 'Y_1nb_avg',
-                           'Y_2nb_sum', 'Y_2nb_avg']
+                           'L_1nb_sum', 
+                           'L_2nb_sum',
+                           'L_3nb_sum',
+                           'A_1nb_sum',
+                           'A_2nb_sum',
+                           'A_3nb_sum',
+                           'Y_1nb_sum',
+                           'Y_2nb_sum']
 
     y = pd.DataFrame(dataset[layer])
     X = dataset.drop([layer, 'id'], axis=1)
@@ -345,15 +393,22 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose):
                                       model=model, 
                                       param_grid=param_grid,
                                       bootstrap_iter=bootstrap_iter,
-                                      verbose=verbose)
+                                      verbose=verbose, 
+                                      is_classification=is_classification)
     
-    if upper < 0:
-        # When the 97.5th percentile of  mse alt model - mse null model 
-        # is less than 0, it indicates that the alt model consistently 
-        # outperforms the null model.
-        result = 'B' # "BIDIRECTED (REJECT NULL)"
+    if is_classification:
+        if lower > 0:
+            result = 'B'
+        else:
+            result = 'U'
     else:
-        result = 'U' # "UNDIRECTED (FAIL TO REJECT NULL)"
+        if upper < 0:
+            # When the 97.5th percentile of  mse alt model - mse null model 
+            # is less than 0, it indicates that the alt model consistently 
+            # outperforms the null model.
+            result = 'B' # "BIDIRECTED (REJECT NULL)"
+        else:
+            result = 'U' # "UNDIRECTED (FAIL TO REJECT NULL)"
 
     return lower, upper, result
 
