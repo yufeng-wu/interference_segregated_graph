@@ -5,7 +5,7 @@ This code:
 2. samples a single realization of a given bidirected graph
 '''
 
-from .util import create_random_network, graph_to_edges
+from util import create_random_network, graph_to_edges
 from scipy.special import expit
 from scipy.stats import norm, beta
 import numpy as np
