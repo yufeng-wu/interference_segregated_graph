@@ -35,8 +35,7 @@ VERBOSE = True
 
 ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'C': [0.01, 0.1, 1, 10, 100],  # Inverse of regularization strength
-    'penalty': ['l1', 'l2']
+    'C': [0.01, 0.1, 1, 10, 100]
 }
 
 # ML_MODEL = KernelRidge()
