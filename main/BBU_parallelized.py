@@ -35,7 +35,8 @@ VERBOSE = True
 ML_MODEL = LogisticRegression()
 PARAM_GRID = {
     'C': [0.01, 0.1, 1, 10, 100],
-    'penalty': ['l1', 'l2', 'elasticnet', 'none']
+    'penalty': ['l1', 'l2'],  # 'liblinear' supports 'l1' and 'l2'
+    'solver': ['liblinear']
 }
 
 
