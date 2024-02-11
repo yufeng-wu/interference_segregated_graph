@@ -5,7 +5,7 @@ import pandas as pd
 import pickle
 from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.kernel_ridge import KernelRidge 
 import warnings
@@ -33,13 +33,19 @@ VERBOSE = True
 #     'min_samples_leaf': [1]
 # }
 
-ML_MODEL = KernelRidge()
+ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'alpha': [1, 10],
-    'kernel': ['rbf', 'poly'],
-    'gamma': [0.1, 1],
-    'degree': [2, 3]
+    'C': [0.01, 0.1, 1, 10, 100],  # Inverse of regularization strength
+    'penalty': ['l1', 'l2']
 }
+
+# ML_MODEL = KernelRidge()
+# PARAM_GRID = {
+#     'alpha': [1, 10],
+#     'kernel': ['rbf', 'poly'],
+#     'gamma': [0.1, 1],
+#     'degree': [2, 3]
+# }
 # PARAM_GRID = {
 #     'alpha': [0.1, 1, 10],  # Regularization strength
 #     'kernel': ['linear', 'poly', 'rbf'],  # Type of kernel
@@ -47,7 +53,7 @@ PARAM_GRID = {
 #     'degree': [2, 3],  # Degree of the polynomial kernel function ('poly'). Ignored by other kernels.
 # }
 
-DATA_SOURCE = "../data/simulation/"
+DATA_SOURCE = "../data/binary_sample/"
 
 def process_iteration(params):
     true_model, sample_size, iteration = params
@@ -85,7 +91,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["BBU"] 
-    effective_sample_sizes = [6000, 7000] #[2000, 3000, 4000, 5000]
+    effective_sample_sizes = [5000, 6000] #[2000, 3000, 4000, 5000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',

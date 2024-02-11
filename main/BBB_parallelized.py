@@ -5,7 +5,7 @@ import pandas as pd
 import pickle
 from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.kernel_ridge import KernelRidge 
 import warnings
@@ -33,13 +33,19 @@ VERBOSE = True
 #     'min_samples_leaf': [1]
 # }
 
-ML_MODEL = KernelRidge()
+ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'alpha': [1, 10],
-    'kernel': ['rbf', 'poly'],
-    'gamma': [0.1, 1],
-    'degree': [2, 3]
+    'C': [0.01, 0.1, 1, 10, 100],  # Inverse of regularization strength
+    'penalty': ['l1', 'l2']
 }
+
+# ML_MODEL = KernelRidge()
+# PARAM_GRID = {
+#     'alpha': [1, 10],
+#     'kernel': ['rbf', 'poly'],
+#     'gamma': [0.1, 1],
+#     'degree': [2, 3]
+# }
 
 DATA_SOURCE = "../data/simulation/"
 

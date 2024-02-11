@@ -5,7 +5,7 @@ This code:
 2. samples a single realization of a given bidirected graph
 '''
 
-from util import create_random_network, graph_to_edges
+from .util import create_random_network, graph_to_edges
 from scipy.special import expit
 from scipy.stats import norm, beta
 import numpy as np
@@ -161,7 +161,7 @@ def sample_L_A_Y(n_samples, network, edge_types):
                                                     burn_in=args['burn_in'])
 
         # Add the current sample DataFrame to the list
-        samples.append(sample)
+        samples.append(sample.copy())
 
     return samples
 

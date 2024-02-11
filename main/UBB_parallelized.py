@@ -8,6 +8,7 @@ from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.kernel_ridge import KernelRidge 
+from sklearn.linear_model import LogisticRegression
 import warnings
 
 # Filter out the UserWarning related to nested parallelism
@@ -25,13 +26,19 @@ VERBOSE = True
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
-ML_MODEL = KernelRidge()
+ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'alpha': [1, 10],
-    'kernel': ['rbf', 'poly'],
-    'gamma': [0.1, 1],
-    'degree': [2, 3]
+    'C': [0.01, 0.1, 1, 10, 100],  # Inverse of regularization strength
+    'penalty': ['l1', 'l2']
 }
+
+# ML_MODEL = KernelRidge()
+# PARAM_GRID = {
+#     'alpha': [1, 10],
+#     'kernel': ['rbf', 'poly'],
+#     'gamma': [0.1, 1],
+#     'degree': [2, 3]
+# }
 
 # PARAM_GRID = {
 #     'alpha': [0.1, 1, 10],  # Regularization strength
