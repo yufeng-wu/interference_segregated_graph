@@ -9,6 +9,8 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.kernel_ridge import KernelRidge 
 import warnings
+from sklearn.svm import SVC
+
 
 # Filter out the UserWarning related to nested parallelism
 warnings.filterwarnings('ignore', category=UserWarning, message='.*Loky-backed parallel loops cannot be called in a multiprocessing.*')
@@ -18,26 +20,33 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 FOLDER_TO_SAVE = "../result/binary/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"BBU_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 20
-TEST_BOOTSTRAP_ITERS = 300
+ITERS_PER_SAMPLE_SIZE = 1#20
+TEST_BOOTSTRAP_ITERS = 100#300
 VERBOSE = True
+
+
+ML_MODEL = SVC(kernel='rbf')  # Using RBF kernel
+PARAM_GRID = {
+    'C': [0.001, 0.01, 0.1, 1],  # Regularization parameter. The strength of the regularization is inversely proportional to C.
+    'gamma': ['scale', 'auto'],  # Kernel coefficient for 'rbf', 'poly' and 'sigmoid'.
+}
 
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
 # ML_MODEL = RandomForestClassifier()
 # PARAM_GRID = {
-#     'n_estimators': [100], 
-#     'max_depth': [None, 20], 
-#     'min_samples_split': [2, 4]
+#     'n_estimators': [20], 
+#     'max_depth': [None, 10], 
+#     'min_samples_split': [2, 10]
 # }
 
-ML_MODEL = LogisticRegression()
-PARAM_GRID = {
-    'C': [0.0001, 0.001, 0.01, 0.1, 1],
-    'penalty': ['l1', 'l2'],  # 'liblinear' supports 'l1' and 'l2'
-    'solver': ['liblinear']
-}
+# ML_MODEL = LogisticRegression()
+# PARAM_GRID = {
+#     'C': [0.0001, 0.001, 0.01, 0.1, 1],
+#     'penalty': ['l1', 'l2'],  # 'liblinear' supports 'l1' and 'l2'
+#     'solver': ['liblinear']
+# }
 
 
 # ML_MODEL = KernelRidge()
@@ -92,7 +101,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["BBU"] 
-    effective_sample_sizes = [1000, 2000, 3000, 4000, 5000, 6000, 7000]
+    effective_sample_sizes = [7000]#[1000, 2000, 3000, 4000, 5000, 6000, 7000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',
