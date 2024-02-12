@@ -6,7 +6,7 @@ import pickle
 from datetime import datetime
 from nonparametric_test_undirected_vs_bidirected import prepare_data, test_edge_type
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.kernel_ridge import KernelRidge 
 import warnings
 
@@ -15,29 +15,30 @@ warnings.filterwarnings('ignore', category=UserWarning, message='.*Loky-backed p
 
 # Global variables
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-FOLDER_TO_SAVE = "../result/"
+FOLDER_TO_SAVE = "../result/binary/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"BBB_{timestamp}.csv"
 
 ITERS_PER_SAMPLE_SIZE = 20
-TEST_BOOTSTRAP_ITERS = 100
+TEST_BOOTSTRAP_ITERS = 300
 VERBOSE = True
 
 # ML_MODEL = LinearRegression()
 # PARAM_GRID = {}
 
-# ML_MODEL = RandomForestRegressor()
+# ML_MODEL = RandomForestClassifier()
 # PARAM_GRID = {
 #     'n_estimators': [100], 
-#     'max_depth': [None, 15, 30], 
-#     'min_samples_split': [2, 3, 4], 
-#     'min_samples_leaf': [1]
+#     'max_depth': [None, 20], 
+#     'min_samples_split': [2, 4]
 # }
 
 ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'C': [0.01, 0.1, 1, 10, 100],  # Inverse of regularization strength
-    'penalty': ['l1', 'l2']
+    'C': [0.0001, 0.001, 0.01, 0.1, 1],
+    'penalty': ['l1', 'l2'],  # 'liblinear' supports 'l1' and 'l2'
+    'solver': ['liblinear']
 }
+
 
 # ML_MODEL = KernelRidge()
 # PARAM_GRID = {
@@ -46,8 +47,14 @@ PARAM_GRID = {
 #     'gamma': [0.1, 1],
 #     'degree': [2, 3]
 # }
+# PARAM_GRID = {
+#     'alpha': [0.1, 1, 10],  # Regularization strength
+#     'kernel': ['linear', 'poly', 'rbf'],  # Type of kernel
+#     'gamma': [None, 0.1, 1],  # Kernel coefficient for 'rbf', 'poly' and 'sigmoid'
+#     'degree': [2, 3],  # Degree of the polynomial kernel function ('poly'). Ignored by other kernels.
+# }
 
-DATA_SOURCE = "../data/simulation/"
+DATA_SOURCE = "../data/binary_sample/"
 
 def process_iteration(params):
     true_model, sample_size, iteration = params
@@ -64,8 +71,8 @@ def process_iteration(params):
     ind_set = random.sample(ind_set_full, sample_size)
     df = prepare_data(GM_sample, ind_set, network)
 
-    L_lower, L_upper, L_result = test_edge_type(layer="L", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
-    Y_lower, Y_upper, Y_result = test_edge_type(layer="Y", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE)
+    L_lower, L_upper, L_result = test_edge_type(layer="L", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE, is_classification=True)
+    Y_lower, Y_upper, Y_result = test_edge_type(layer="Y", dataset=df, bootstrap_iter=TEST_BOOTSTRAP_ITERS, model=ML_MODEL, param_grid=PARAM_GRID, verbose=VERBOSE, is_classification=True)
 
     return {
         'true_model': true_model,
@@ -85,7 +92,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["BBB"] 
-    effective_sample_sizes = [6000, 7000] #[2000, 3000, 4000, 5000]
+    effective_sample_sizes = [1000, 2000, 3000, 4000, 5000, 6000, 7000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',

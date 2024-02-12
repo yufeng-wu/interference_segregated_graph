@@ -15,11 +15,11 @@ warnings.filterwarnings('ignore', category=UserWarning, message='.*Loky-backed p
 
 # Global variables
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-FOLDER_TO_SAVE = "../result/"
+FOLDER_TO_SAVE = "../result/binary/"
 FILENAME_TO_SAVE = FOLDER_TO_SAVE + f"BBU_{timestamp}.csv"
 
-ITERS_PER_SAMPLE_SIZE = 10
-TEST_BOOTSTRAP_ITERS = 200
+ITERS_PER_SAMPLE_SIZE = 20
+TEST_BOOTSTRAP_ITERS = 300
 VERBOSE = True
 
 # ML_MODEL = LinearRegression()
@@ -92,7 +92,7 @@ def process_iteration(params):
 
 def main():
     true_models = ["BBU"] 
-    effective_sample_sizes = [2000, 3000, 4000, 5000, 6000, 7000]
+    effective_sample_sizes = [1000, 2000, 3000, 4000, 5000, 6000, 7000]
 
     columns = ['true_model', 'data_source', 'network_size', 'effective_sample_size',
                'test_bootstrap_iters', 'ML_model_name', 'tuning_param_grid',
