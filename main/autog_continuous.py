@@ -248,25 +248,24 @@ def optimize_params(nll_function, initial_params, f, est_df):
 
 ''' ESTIMATE NETWORK CAUSAL EFFECTS '''
 
-def approximate_cdf(conditional_pdf, conditionals, x_range, num_points=1000):
+def approximate_cdf(conditional_pdf, conditionals, x_range, num_points=100):
     """Numerically approximate the CDF of a given conditional PDF over a specified range."""
     x_values = np.linspace(x_range[0], x_range[1], num_points)
     cdf_values = np.zeros(num_points)
+
+    def integrand(x):
+        return conditional_pdf(x, conditionals)
     
     for i, x in enumerate(x_values):
-        def integrand(x):
-            return conditional_pdf(x, **conditionals)
-        
         # Integrate the conditional PDF up to x to approximate the CDF at x
-        (cdf_values[i], _) = quad(integrand, x_range[0], x)
+        (cdf_values[i], _) = quad(integrand, a=x_range[0], b=x)
     
     return x_values, cdf_values
 
-def draw(conditional_pdf, conditionals, x_range=[-100, 100], num_samples=1):
+def draw(conditional_pdf, conditionals, x_range=[-3, 3], num_samples=1):
     """Draw samples from a custom distribution defined by a conditional PDF within a given range."""
-
     x_values, cdf_values = approximate_cdf(conditional_pdf, conditionals, x_range)
-    
+
     # Create an interpolation function for the inverse CDF
     inverse_cdf = interp1d(cdf_values, x_values, fill_value="extrapolate")
     
@@ -278,7 +277,7 @@ def draw(conditional_pdf, conditionals, x_range=[-100, 100], num_samples=1):
     
     return custom_samples
 
-def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val, mode='true'):
+def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val, mode):
     '''
     Implementation of the Gibbs Sampler I algorithm on p10 of the auto-g paper.
 
@@ -315,7 +314,7 @@ def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val, mod
     sample['Y'] = {vertex: np.random.normal(0, 1) for vertex in network.keys()}
 
     for m in range(n_samples + burn_in):
-        if verbose and m % 1000 == 0:
+        if verbose and m % 1 == 0:
             print("progress: ", m / (n_samples + burn_in))
             
         i = (m % N) # the paper has "+1" but i don't +1 because the index of subjects in my network starts from 0
@@ -428,13 +427,13 @@ def main():
 
     beta_0, beta_1, beta_2, beta_3, beta_4, sigma2_y, theta = [0.5]*7
     initial_params = [beta_0, beta_1, beta_2, beta_3, beta_4, sigma2_y, theta]
-    params_Y = optimize_params(nlcl, initial_params, f_Y_i_given_stuff, est_df)
+    params_Y = initial_params#optimize_params(nlcl, initial_params, f_Y_i_given_stuff, est_df)
 
     print("Estimated Params Y:", params_Y)
         
-    sigma2_l, mu_l, weight_l= [0.5]*2
+    sigma2_l, mu_l, weight_l= [0.5]*3
     initial_params = [sigma2_l, mu_l, weight_l]
-    params_L = optimize_params(nlcl, initial_params, f_L_i_given_stuff, est_df)
+    params_L = initial_params#optimize_params(nlcl, initial_params, f_L_i_given_stuff, est_df)
 
     print("Estimated Params L:", params_L)
     
@@ -503,7 +502,7 @@ def main():
     
     Y_A1 = gibbs_sampler_1(n_samples=10000, burn_in=10000, network=network, 
                            f_Yi=hat_f_Yi, f_Li=hat_f_Li, verbose=True, 
-                           A_val=1, mode='true')
+                           A_val=1, mode='estimate')
     
     beta_alpha = np.mean([beta_i_a(Y_A1, i, 3) for i in range(0, NUM_OF_SUBJECTS)])
     print("beta(alpha) =", beta_alpha)
