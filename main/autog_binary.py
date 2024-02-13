@@ -96,15 +96,15 @@ def df_for_estimation(network, ind_set, sample):
     return df     
 
 
-''' AUTO LOGISTIC MODEL '''
+''' AUTO GAUSSIAN MODEL '''
 
 ''' 
 Functions defined for the L layer
-Parameters: beta_0, beta_1
+Parameters: sigma2_l, mu_l, weight_l
 '''
 def H_i(l_i, params):
-    beta_0, beta_1 = params
-    return beta_0 + beta_1*l_i
+    sigma2_l, mu_l = params[:-1]
+    return -(1/(2*sigma2_l)) * (l_i - 2*mu_l)
 
 def W_i(data_i, params, l_i=None):
     # we allow the caller to pass in l_i separate from data_i
@@ -114,8 +114,9 @@ def W_i(data_i, params, l_i=None):
     H_i_output = H_i(l_i=l_i, params=params)
     
     second_term = 0
+    weight_l = params[-1]
     for l_j in data_i['l_j_list']:
-        second_term += l_i * l_j * data_i['w_ij_l']
+        second_term += weight_l * l_i * l_j * data_i['w_ij_l']
     
     return l_i * H_i_output + second_term
 
@@ -128,27 +129,31 @@ def f_L_i_given_stuff(data_i, params):
         - data_i: data associated with i, which is an element in an 1-apart 
                   maximal independent set of the network. It contains 'l_i',
                   'l_j_list', and 'w_ij_l'.
-        - params: parameters of this distribution: beta_0, beta_1
+        - params: parameters of this distribution: sigma2_l, mu_l, weight_l
 
     The function returns the probability that L_i = l_i given l_-i (as 
     represented with 'l_j_list').
     '''
     numerator = math.exp(W_i(data_i, params))
-    
-    denominator = 0
-    for l_i_val in [0, 1]: 
-        # sum over all possible values of l_i (which is 1 and 0 cuz l is binary)
-        denominator += math.exp(W_i(data_i, params, l_i=l_i_val))
+
+    # define a lambda function for what we want to integrate over
+    integrand = lambda l_i: math.exp(W_i(data_i, params, l_i))
+
+    # perform numerical integration over the range of y_i
+    range_min, range_max = -np.inf, np.inf 
+    denominator, absolute_error = quad(integrand, range_min, range_max)
     
     return numerator / denominator
 
 ''' 
 Functions defined for the Y layer
-Parameters: beta_0, beta_1, beta_2, beta_3, beta_4, theta
+Parameters: beta_0, beta_1, beta_2, beta_3, beta_4, sigma2_y, theta
 '''
+
 def G_i(y_i, a_i, l_i, adjusted_sum_a_j, adjusted_sum_l_j, params):
-    beta_0, beta_1, beta_2, beta_3, beta_4 = params[:-1]
-    return beta_0 + beta_1*a_i + beta_2*l_i + beta_3*adjusted_sum_a_j + beta_4*adjusted_sum_l_j
+    beta_0, beta_1, beta_2, beta_3, beta_4, sigma2_y = params[:-1]
+    mu_y_i = beta_0 + beta_1*a_i + beta_2*l_i + beta_3*adjusted_sum_a_j + beta_4*adjusted_sum_l_j
+    return -(1/(2*sigma2_y)) * (y_i - 2*mu_y_i)
 
 def theta_ij(w_ij_y, params):
     theta = params[-1]
@@ -160,11 +165,11 @@ def U_i(data_i, params, y_i=None):
     if y_i == None:
         y_i = data_i['y_i']
     G_i_output = G_i(y_i=y_i, 
-                     a_i=data_i['a_i'], 
-                     l_i=data_i['l_i'], 
-                     adjusted_sum_a_j=data_i['adjusted_sum_a_j'], 
-                     adjusted_sum_l_j=data_i['adjusted_sum_l_j'], 
-                     params=params)
+                      a_i=data_i['a_i'], 
+                      l_i=data_i['l_i'], 
+                      adjusted_sum_a_j=data_i['adjusted_sum_a_j'], 
+                      adjusted_sum_l_j=data_i['adjusted_sum_l_j'], 
+                      params=params)
     
     second_term = 0
     for y_j in data_i['y_j_list']:
@@ -184,17 +189,19 @@ def f_Y_i_given_stuff(data_i, params):
                   'l_i', 'a_i', 'y_j_list', 'adjusted_sum_a_j', 
                   'adjusted_sum_l_j', and 'w_ij_y'.
         - params: parameters of this distribution: 
-                  beta_0, beta_1, beta_2, beta_3, beta_4, theta
+                  beta_0, beta_1, beta_2, beta_3, beta_4, sigma2_y, theta
 
     The function returns the probability that Y_i = y_i given y_-i, a, l 
     (which can be simplified to given the boundary of Y_i in the CG model).
     '''
     numerator = math.exp(U_i(data_i, params))
     
-    denominator = 0
-    for y_i_val in [0, 1]: 
-        # sum over all possible values of y_i (which is 1 and 0 cuz y is binary)
-        denominator += math.exp(U_i(data_i, params, y_i=y_i_val))
+    # define a lambda function for what we want to integrate over
+    integrand = lambda y_i: math.exp(U_i(data_i, params, y_i))
+    
+    # perform numerical integration over the range of y_i
+    range_min, range_max = -np.inf, np.inf 
+    denominator, absolute_error = quad(integrand, range_min, range_max)
     
     return numerator / denominator
 
@@ -262,7 +269,8 @@ def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val):
                 estimated parameters.
         - verbose: True or False
         - A_val: the value of A_i that we set / intervene for each A_i.
-                 should be either 0 or 1 as we are working with binary variables.
+                 should be either 0 or 1 as we are working with binary 
+                 treatments.
     
     Return:
         - n_samples samples of realization of the network after burn_in period.
@@ -327,3 +335,121 @@ def beta_i_a(samples, i, select_for_every):
         
     average_Y = float(sum(selected_Y_values) / len(selected_Y_values))
     return average_Y
+
+
+
+
+
+
+
+
+''' SCRATCH WORK BELOW THIS LINE '''
+
+''' AUTO LOGISTIC MODEL '''
+
+''' 
+Functions defined for the L layer
+Parameters: beta_0, beta_1
+'''
+# def H_i(l_i, params):
+#     beta_0, beta_1 = params
+#     return beta_0 + beta_1*l_i
+
+# def W_i(data_i, params, l_i=None):
+#     # we allow the caller to pass in l_i separate from data_i
+#     # so that when evaluating the denominator it is easier.
+#     if l_i == None:
+#         l_i = data_i['l_i']
+#     H_i_output = H_i(l_i=l_i, params=params)
+    
+#     second_term = 0
+#     for l_j in data_i['l_j_list']:
+#         second_term += l_i * l_j * data_i['w_ij_l']
+    
+#     return l_i * H_i_output + second_term
+
+# def f_L_i_given_stuff(data_i, params): 
+#     '''
+#     This is the distribution f(L_i | L_-i) with the parametric form specified 
+#     by the auto-g paper. The distribution has paramters "params."
+
+#     Inputs:
+#         - data_i: data associated with i, which is an element in an 1-apart 
+#                   maximal independent set of the network. It contains 'l_i',
+#                   'l_j_list', and 'w_ij_l'.
+#         - params: parameters of this distribution: beta_0, beta_1
+
+#     The function returns the probability that L_i = l_i given l_-i (as 
+#     represented with 'l_j_list').
+#     '''
+#     numerator = math.exp(W_i(data_i, params))
+    
+#     denominator = 0
+#     for l_i_val in [0, 1]: 
+#         # sum over all possible values of l_i (which is 1 and 0 cuz l is binary)
+#         denominator += math.exp(W_i(data_i, params, l_i=l_i_val))
+    
+#     return numerator / denominator
+
+# ''' 
+# Functions defined for the Y layer
+# Parameters: beta_0, beta_1, beta_2, beta_3, beta_4, theta
+# '''
+# def G_i(y_i, a_i, l_i, adjusted_sum_a_j, adjusted_sum_l_j, params):
+#     beta_0, beta_1, beta_2, beta_3, beta_4 = params[:-1]
+#     return beta_0 + beta_1*a_i + beta_2*l_i + beta_3*adjusted_sum_a_j + beta_4*adjusted_sum_l_j
+
+# def theta_ij(w_ij_y, params):
+#     theta = params[-1]
+#     return w_ij_y * theta
+
+# def U_i(data_i, params, y_i=None):
+#     # we allow the caller to pass in y_i separate from data_i
+#     # so that when evaluating the denominator it is easier.
+#     if y_i == None:
+#         y_i = data_i['y_i']
+#     G_i_output = G_i(y_i=y_i, 
+#                      a_i=data_i['a_i'], 
+#                      l_i=data_i['l_i'], 
+#                      adjusted_sum_a_j=data_i['adjusted_sum_a_j'], 
+#                      adjusted_sum_l_j=data_i['adjusted_sum_l_j'], 
+#                      params=params)
+    
+#     second_term = 0
+#     for y_j in data_i['y_j_list']:
+#         second_term += y_i * y_j * theta_ij(data_i['w_ij_y'], params)
+    
+#     return y_i * G_i_output + second_term
+
+# def f_Y_i_given_stuff(data_i, params):
+#     '''
+#     This is the distribution f(Y_i | Y_-i = y_-i, a, l) with 
+#     the parametric form specified by the auto-g paper. 
+#     The distribution has paramters "params."
+
+#     Inputs:
+#         - data_i: data associated with i, which is an element in an 1-apart 
+#                   maximal independent set of the network. It contains 'y_i', 
+#                   'l_i', 'a_i', 'y_j_list', 'adjusted_sum_a_j', 
+#                   'adjusted_sum_l_j', and 'w_ij_y'.
+#         - params: parameters of this distribution: 
+#                   beta_0, beta_1, beta_2, beta_3, beta_4, theta
+
+#     The function returns the probability that Y_i = y_i given y_-i, a, l 
+#     (which can be simplified to given the boundary of Y_i in the CG model).
+#     '''
+#     numerator = math.exp(U_i(data_i, params))
+    
+#     denominator = 0
+#     for y_i_val in [0, 1]: 
+#         # sum over all possible values of y_i (which is 1 and 0 cuz y is binary)
+#         denominator += math.exp(U_i(data_i, params, y_i=y_i_val))
+    
+#     return numerator / denominator
+
+# def draw(dist, inputs):
+#     '''
+#     Draw a realization from the distribution dist with inputs inputs.
+#     '''
+#     proba_of_1 = dist(inputs)
+#     return np.random.binomial(1, proba_of_1)
