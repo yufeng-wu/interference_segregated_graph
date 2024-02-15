@@ -145,11 +145,11 @@ Functions defined for the Y layer
 Parameters: beta_0, beta_1, beta_2, beta_3, beta_4, theta
 '''
 def G_i(y_i, a_i, l_i, adjusted_sum_a_j, adjusted_sum_l_j, params):
-    beta_1, beta_2, beta_3, beta_4 = params[:-1]
-    return beta_1*a_i + beta_2*l_i + beta_3*adjusted_sum_a_j + beta_4*adjusted_sum_l_j
+    # beta_1, beta_2, beta_3, beta_4 = params[:-1]
+    # return beta_1*a_i + beta_2*l_i + beta_3*adjusted_sum_a_j + beta_4*adjusted_sum_l_j
 
-    # beta_0, beta_1, beta_2, beta_3, beta_4 = params[:-1]
-    # return beta_0 + beta_1*a_i + beta_2*l_i + beta_3*adjusted_sum_a_j + beta_4*adjusted_sum_l_j
+    beta_0, beta_1, beta_2, beta_3, beta_4 = params[:-1]
+    return beta_0 + beta_1*a_i + beta_2*l_i + beta_3*adjusted_sum_a_j + beta_4*adjusted_sum_l_j
 
 def theta_ij(w_ij_y, params):
     theta = params[-1]
@@ -243,7 +243,8 @@ def draw(dist, inputs):
     proba_of_1 = dist(inputs)
     return np.random.binomial(1, proba_of_1)
 
-def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val):
+def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val, 
+                    L_sample=None):
     '''
     Implementation of the Gibbs Sampler I algorithm on p10 of the auto-g paper.
     Inputs:
@@ -259,6 +260,7 @@ def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val):
         - verbose: True or False
         - A_val: the value of A_i that we set / intervene for each A_i.
                  should be either 0 or 1 as we are working with binary variables.
+        - L_sample: the orignal sample of the L layer of the graph
     
     Return:
         - n_samples samples of realization of the network after burn_in period.
@@ -268,7 +270,11 @@ def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val):
 
     # produce initial values
     sample = pd.DataFrame(index=network.keys(), columns=['L', 'A', 'Y'])
-    sample['L'] = {vertex: random.choice([1, 0]) for vertex in network.keys()}
+
+    if L_sample is None:
+        sample['L'] = {vertex: random.choice([1, 0]) for vertex in network.keys()}
+    else:
+        sample['L'] = L_sample
     sample['A'] = {vertex: A_val for vertex in network.keys()}
     sample['Y'] = {vertex: random.choice([1, 0]) for vertex in network.keys()}
 
@@ -279,10 +285,11 @@ def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val):
         i = (m % N) # the paper has "+1" but i don't +1 because the index of subjects in my network starts from 0
         
         # draw L_i ~ f(L_i | L_-i)
-        boundary_values_L = {
-            'L_neighbors': [sample.loc[neighbor, 'L'] for neighbor in network[i]]
-        }
-        new_Li = draw(dist=f_Li, inputs=boundary_values_L)
+        if L_sample is None:
+            boundary_values_L = {
+                'L_neighbors': [sample.loc[neighbor, 'L'] for neighbor in network[i]]
+            }
+            new_Li = draw(dist=f_Li, inputs=boundary_values_L)
 
         # draw Y_i ~ f(Y_i | Y_-i)
         boundary_values_Y = {
@@ -294,7 +301,10 @@ def gibbs_sampler_1(n_samples, burn_in, network, f_Yi, f_Li, verbose, A_val):
         }
         new_Yi = draw(dist=f_Yi, inputs=boundary_values_Y)
 
-        sample.loc[i, 'L'] = new_Li
+        # update the newly drawn Li (if L_sample is not passed in) and Yi
+        if L_sample is None:
+            sample.loc[i, 'L'] = new_Li
+        
         sample.loc[i, 'Y'] = new_Yi
 
         if m >= burn_in:
@@ -325,20 +335,18 @@ def beta_i_a(samples, i, select_for_every):
     return average_Y
 
 def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog, 
-                              network, num_of_subejects, A_val):
+                              network, num_of_subejects, A_val, L_sample):
     '''Estimate Network Causal Effects Via Auto-G '''
-    # beta_0, beta_1, beta_2, beta_3, beta_4, theta = [0.5]*6
-    # initial_params = [beta_0, beta_1, beta_2, beta_3, beta_4, theta]
-    beta_1, beta_2, beta_3, beta_4, theta = [0.5]*5
-    initial_params = [beta_1, beta_2, beta_3, beta_4, theta]
+    beta_0, beta_1, beta_2, beta_3, beta_4, theta = [0.5]*6
+    initial_params = [beta_0, beta_1, beta_2, beta_3, beta_4, theta]
+    # beta_1, beta_2, beta_3, beta_4, theta = [0.5]*5 # not estimating beta_0 here
+    # initial_params = [beta_1, beta_2, beta_3, beta_4, theta]
     params_Y = optimize_params(nlcl, initial_params, f_Y_i_given_stuff, est_df_sample)
-
     print("Estimated Params Y:", params_Y)
         
     beta_0 = 0.5
     initial_params = [beta_0]
     params_L = optimize_params(nlcl, initial_params, f_L_i_given_stuff, est_df_sample)
-
     print("Estimated Params L:", params_L)
     
     def hat_f_Yi(inputs):
@@ -375,7 +383,6 @@ def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog,
             'w_ij_y': w_ij_y,
             'w_ij_l': w_ij_l 
         }
-            
         return f_Y_i_given_stuff(inputs, params_Y)
 
     def hat_f_Li(inputs):
@@ -383,24 +390,20 @@ def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog,
         return: proba of li = 1
         '''
         l_i = 1
-            
         normalizing_weight = 1 / len(inputs['L_neighbors']) #TODO
-            
         l_j = inputs['L_neighbors']
-
         w_ij_l = normalizing_weight
-            
+
         inputs = {
             'l_i': l_i,
             'l_j_list': l_j,
             'w_ij_l': w_ij_l 
         }
-            
         return f_L_i_given_stuff(inputs, params_L)
 
     Y_A1 = gibbs_sampler_1(n_samples=n_samples_autog, burn_in=burn_in_autog, network=network, 
                            f_Yi=hat_f_Yi, f_Li=hat_f_Li, verbose=False, 
-                           A_val=A_val)
+                           A_val=A_val, L_sample=L_sample)
     
     autog_beta_alpha = np.mean([beta_i_a(Y_A1, i, 3) for i in range(0, num_of_subejects)])
     print("AUTO-G beta(alpha) =", autog_beta_alpha)
@@ -408,62 +411,62 @@ def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog,
     return autog_beta_alpha
 
 def bootstrap_confidence_interval(data, n_bootstraps, alpha, n_samples_autog, 
-                                  burn_in_autog, network, num_of_subejects, A_val):
+                                  burn_in_autog, network, num_of_subejects, 
+                                  A_val, L_sample):
     bootstrapped_estimates = []
+
     for _ in range(n_bootstraps):
-        # Sample with replacement from the data
-        sample = resample(data)
-        estimate = estimate_autog_beta_alpha(sample, n_samples_autog, burn_in_autog, network, 
-                                             num_of_subejects, A_val)
+        another_sample = resample(data) # sample with replacement
+        estimate = estimate_autog_beta_alpha(another_sample, n_samples_autog, 
+                    burn_in_autog, network, num_of_subejects, A_val, L_sample)
         bootstrapped_estimates.append(estimate)
     
-    # Calculate the percentiles for the confidence interval
-    lower_percentile = 100 * alpha / 2
-    upper_percentile = 100 * (1 - alpha / 2)
-    confidence_interval = np.percentile(bootstrapped_estimates, [lower_percentile, upper_percentile])
+    # calculate the lower & upper percentiles for confidence interval
+    lower = 100 * alpha / 2
+    upper = 100 * (1 - alpha / 2)
+    confidence_interval = np.percentile(bootstrapped_estimates, [lower, upper])
     return confidence_interval
 
 def main():
 
-    NUM_OF_SUBJECTS = 3000
-    N_SAMPLES = 5000
-    BURN_IN = 5000
-    USE_EXISTING_DATA = True
+    NUM_OF_SUBJECTS = 1000
+    N_SAMPLES = 4000
+    BURN_IN = 4000
+    USE_EXISTING_DATA = False
 
     if USE_EXISTING_DATA:
         # read in saved data
         with open('./autog_binary_data/network.pkl', 'rb') as file:
             network = pickle.load(file)
-
+        with open('./autog_binary_data/GM_sample.pkl', 'rb') as file:
+            GM_sample = pickle.load(file)
         with open('./autog_binary_data/ind_set_1_apart.pkl', 'rb') as file:
             ind_set_1_apart = pickle.load(file)
-
         with open('./autog_binary_data/est_df.pkl', 'rb') as file:
             est_df = pickle.load(file)
-
     else:
         network = util.create_random_network(n=NUM_OF_SUBJECTS, min_neighbors=1, max_neighbors=6)
 
-        edge_types = gns.generate_edge_types("UUU")
-
         # Sample a single realization from the specified Graphical Model
+        edge_types = gns.generate_edge_types("UUU")
         GM_sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
 
         ind_set_1_apart = maximal_independent_set.maximal_n_apart_independent_set(network, 1)
         ind_set_1_apart = pd.DataFrame(list(ind_set_1_apart), columns=["subject"])
         est_df = df_for_estimation(network=network, ind_set=ind_set_1_apart, sample=GM_sample)
 
+        # save data for future use
         with open('./autog_binary_data/network.pkl', 'wb') as file:
             pickle.dump(network, file)
-
+        with open('./autog_binary_data/GM_sample.pkl', 'wb') as file:
+            pickle.dump(GM_sample, file)
         with open('./autog_binary_data/ind_set_1_apart.pkl', 'wb') as file:
             pickle.dump(ind_set_1_apart, file)
-
         with open('./autog_binary_data/est_df.pkl', 'wb') as file:
             pickle.dump(est_df, file)
 
-    '''Evaluate True Network Causal Effects '''
 
+    '''Evaluate True Network Causal Effects '''
     # evaluate true causal effect using true f_Yi, true f_Li, n, and A_val (via beta_i_a and gibbs sampler 1)
     true_f_Yi = dg.sample_given_boundary_binary
     true_f_Li = dg.sample_given_boundary_binary
@@ -475,12 +478,19 @@ def main():
     true_beta_alpha = np.mean([beta_i_a(Y_A1, i, 3) for i in range(0, NUM_OF_SUBJECTS)])
     print("TRUE beta(alpha) =", true_beta_alpha)
 
+
     '''Estimate Network Causal Effects Via Auto-G'''
-    conf_int = bootstrap_confidence_interval(data=est_df, n_bootstraps=100, 
-        alpha=0.05, n_samples_autog=N_SAMPLES, burn_in_autog=BURN_IN, 
-        network=network, num_of_subejects=NUM_OF_SUBJECTS, A_val=1)
+
+    ## L layer: comparing our proposal v.s. auto-g paper's approach
+    ## L_sample=GM_sample['L'] : using the original L sample 
+    ## L_sample=None : generate new L samples based on the estimated f_Li
+    conf_int = bootstrap_confidence_interval(
+        data=est_df, n_bootstraps=100, alpha=0.05, n_samples_autog=N_SAMPLES, 
+        burn_in_autog=BURN_IN, network=network, num_of_subejects=NUM_OF_SUBJECTS, 
+        A_val=1, L_sample=None)
     
     print("AUTO-G Confidence Interval:", conf_int)
+
 
 if __name__ == "__main__":
     main()
