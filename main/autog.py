@@ -16,6 +16,7 @@ import pickle
 from scipy.optimize import minimize
 from scipy.integrate import quad
 import math
+import concurrent.futures
 
 
 ''' DATA PREPARATION '''
@@ -426,12 +427,13 @@ def bootstrap_confidence_interval(data, n_bootstraps, alpha, n_samples_autog,
     upper = 100 * (1 - alpha / 2)
     confidence_interval = np.percentile(bootstrapped_estimates, [lower, upper])
     return confidence_interval
+    
 
-def main():
+def run_experiment(num_subjects):
 
-    NUM_OF_SUBJECTS = 1000
-    N_SAMPLES = 4000
-    BURN_IN = 4000
+    NUM_OF_SUBJECTS = num_subjects
+    N_SAMPLES = 5 * NUM_OF_SUBJECTS
+    BURN_IN = 10 * NUM_OF_SUBJECTS
     USE_EXISTING_DATA = False
 
     if USE_EXISTING_DATA:
@@ -456,15 +458,14 @@ def main():
         est_df = df_for_estimation(network=network, ind_set=ind_set_1_apart, sample=GM_sample)
 
         # save data for future use
-        with open('./autog_binary_data/network.pkl', 'wb') as file:
-            pickle.dump(network, file)
-        with open('./autog_binary_data/GM_sample.pkl', 'wb') as file:
-            pickle.dump(GM_sample, file)
-        with open('./autog_binary_data/ind_set_1_apart.pkl', 'wb') as file:
-            pickle.dump(ind_set_1_apart, file)
-        with open('./autog_binary_data/est_df.pkl', 'wb') as file:
-            pickle.dump(est_df, file)
-
+        # with open('./autog_binary_data/network.pkl', 'wb') as file:
+        #     pickle.dump(network, file)
+        # with open('./autog_binary_data/GM_sample.pkl', 'wb') as file:
+        #     pickle.dump(GM_sample, file)
+        # with open('./autog_binary_data/ind_set_1_apart.pkl', 'wb') as file:
+        #     pickle.dump(ind_set_1_apart, file)
+        # with open('./autog_binary_data/est_df.pkl', 'wb') as file:
+        #     pickle.dump(est_df, file)
 
     '''Evaluate True Network Causal Effects '''
     # evaluate true causal effect using true f_Yi, true f_Li, n, and A_val (via beta_i_a and gibbs sampler 1)
@@ -491,6 +492,35 @@ def main():
     
     print("AUTO-G Confidence Interval:", conf_int)
 
+    # The modified main function content goes here, using num_subjects instead of a fixed number
+    # Return the results instead of printing them directly
+    return {
+        'num_subjects': num_subjects,
+        'true_beta_alpha': true_beta_alpha,
+        'confidence_interval': conf_int,
+    }
+
+
+def run_experiments_with_multiprocessing():
+    num_subjects_list = [500, 1000, 1500, 2000, 3000, 4000]
+    results = []
+
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = [executor.submit(run_experiment, num_subjects) for num_subjects in num_subjects_list]
+        for future in concurrent.futures.as_completed(futures):
+            results.append(future.result())
+    
+    # Convert results to DataFrame
+    results_df = pd.DataFrame(results)
+
+    # Save to CSV
+    results_df.to_csv('autog_experiment_results.csv', index=False)
+
+    print("Experiment completed. Results saved to 'autog_experiment_results.csv'.")
+
+
+def main():
+    run_experiments_with_multiprocessing()
 
 if __name__ == "__main__":
     main()
