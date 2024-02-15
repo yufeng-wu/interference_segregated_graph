@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, ParameterGrid
-from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.metrics import mean_squared_error, accuracy_score, brier_score_loss
 from sklearn.linear_model import LinearRegression
 from sklearn.kernel_ridge import KernelRidge
 import warnings
@@ -215,29 +215,28 @@ def _tune_hyperparams(X_train, y_train, X_val, y_val, predictors,
     """
     
     best_params = None
+    best_score = float('inf')
 
     if is_classification:
-        best_score = 0
-        evaluation_function = accuracy_score
+        evaluation_function = brier_score_loss
     else:
-        best_score = float('inf')
         evaluation_function = mean_squared_error
 
     for params in ParameterGrid(param_grid):
         model.set_params(**params)
         model.fit(X_train[predictors], np.ravel(y_train))
-        val_score = evaluation_function(y_val, model.predict(X_val[predictors]))
 
         if is_classification:
-            # for classification, higher the accuracy the better
-            if val_score > best_score:
-                best_score = val_score
-                best_params = params
+            # For binary classification, predict probabilities of the positive class
+            predictions = model.predict_proba(X_val[predictors])[:, 1] 
         else:
-            # for regression, lower the mse the better
-            if val_score < best_score:
-                best_score = val_score
-                best_params = params  
+            predictions = model.predict(X_val[predictors])
+
+        val_score = evaluation_function(y_val, predictions)
+
+        if val_score < best_score:
+            best_score = val_score
+            best_params = params  
 
     print(best_params)
     return best_params, best_score
@@ -247,13 +246,24 @@ def _train_and_eval(X_train, y_train, X_test, y_test, predictors,
     """
     Train the model with the best parameters and evaluate on the test set.
     """
+    # set the evaluation function based on the task
     if is_classification:
-        evaluation_function = accuracy_score
+        evaluation_function = brier_score_loss
     else:
         evaluation_function = mean_squared_error
+
     model.set_params(**best_params)
     model.fit(X_train[predictors], np.ravel(y_train))
-    return evaluation_function(y_test, model.predict(X_test[predictors]))
+    
+    # Use predict_proba for binary classification to get the probabilities for the positive class
+    if is_classification:
+        predictions = model.predict_proba(X_test[predictors])[:, 1] 
+    else:
+        predictions = model.predict(X_test[predictors])
+
+    # Evaluate the model using the appropriate metric
+    test_score = evaluation_function(y_test, predictions)
+    return test_score
 
 def diff_test_accuracy(X_train, y_train, X_val, y_val, X_test, y_test, 
                        null_predictors, alt_predictors, model, param_grid,
@@ -396,19 +406,13 @@ def test_edge_type(layer, dataset, bootstrap_iter, model, param_grid, verbose, i
                                       verbose=verbose, 
                                       is_classification=is_classification)
     
-    if is_classification:
-        if lower > 0:
-            result = 'B'
-        else:
-            result = 'U'
+    if upper < 0:
+        # When the 97.5th percentile of  mse alt model - mse null model 
+        # is less than 0, it indicates that the alt model consistently 
+        # outperforms the null model.
+        result = 'B' # "BIDIRECTED (REJECT NULL)"
     else:
-        if upper < 0:
-            # When the 97.5th percentile of  mse alt model - mse null model 
-            # is less than 0, it indicates that the alt model consistently 
-            # outperforms the null model.
-            result = 'B' # "BIDIRECTED (REJECT NULL)"
-        else:
-            result = 'U' # "UNDIRECTED (FAIL TO REJECT NULL)"
+        result = 'U' # "UNDIRECTED (FAIL TO REJECT NULL)"
 
     return lower, upper, result
 

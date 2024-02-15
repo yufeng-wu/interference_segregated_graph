@@ -17,9 +17,9 @@ def generate_edge_types(true_model):
     edge_types = {}
 
     if true_model[0] == 'U': 
-        edge_types['L'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
+        edge_types['L'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_binary, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
     else:
-        edge_types['L'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]
+        edge_types['L'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_binary}]
 
     if true_model[1] == 'U': 
         edge_types['A'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_binary, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
@@ -27,9 +27,9 @@ def generate_edge_types(true_model):
         edge_types['A'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_binary}]
 
     if true_model[2] == 'U': 
-        edge_types['Y'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_continuous, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
+        edge_types['Y'] = ['U', {'sample_given_boundary':dg.sample_given_boundary_binary, 'verbose':VERBOSE, 'burn_in':BURN_IN}]
     else:
-        edge_types['Y'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_1}]
+        edge_types['Y'] = ['B', {'U_dist':dg.U_dist_1, 'f':dg.f_binary}]
 
     return edge_types
 

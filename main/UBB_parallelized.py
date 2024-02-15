@@ -9,6 +9,8 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.kernel_ridge import KernelRidge 
 import warnings
+from sklearn.svm import SVC
+
 
 # Filter out the UserWarning related to nested parallelism
 warnings.filterwarnings('ignore', category=UserWarning, message='.*Loky-backed parallel loops cannot be called in a multiprocessing.*')
@@ -27,32 +29,18 @@ VERBOSE = True
 
 # ML_MODEL = RandomForestClassifier()
 # PARAM_GRID = {
-#     'n_estimators': [100], 
-#     'max_depth': [None, 20], 
-#     'min_samples_split': [2, 4]
+#     'n_estimators': [20, 100, 500], 
+#     'max_depth': [None, 5, 10], 
+#     'min_samples_split': [2, 10]
 # }
 
 ML_MODEL = LogisticRegression()
 PARAM_GRID = {
-    'C': [0.0001, 0.001, 0.01, 0.1, 1],
+    'C': [0.001, 0.01, 0.1, 1, 100, 100000],
     'penalty': ['l1', 'l2'],  # 'liblinear' supports 'l1' and 'l2'
     'solver': ['liblinear']
 }
 
-
-# ML_MODEL = KernelRidge()
-# PARAM_GRID = {
-#     'alpha': [1, 10],
-#     'kernel': ['rbf', 'poly'],
-#     'gamma': [0.1, 1],
-#     'degree': [2, 3]
-# }
-# PARAM_GRID = {
-#     'alpha': [0.1, 1, 10],  # Regularization strength
-#     'kernel': ['linear', 'poly', 'rbf'],  # Type of kernel
-#     'gamma': [None, 0.1, 1],  # Kernel coefficient for 'rbf', 'poly' and 'sigmoid'
-#     'degree': [2, 3],  # Degree of the polynomial kernel function ('poly'). Ignored by other kernels.
-# }
 
 DATA_SOURCE = "../data/binary_sample/"
 
