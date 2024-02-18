@@ -450,7 +450,7 @@ def run_experiment(num_subjects):
         network = util.create_random_network(n=NUM_OF_SUBJECTS, min_neighbors=1, max_neighbors=6)
 
         # Sample a single realization from the specified Graphical Model
-        edge_types = gns.generate_edge_types("UUU")
+        edge_types = gns.generate_edge_types("UUB")
         GM_sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
 
         ind_set_1_apart = maximal_independent_set.maximal_n_apart_independent_set(network, 1)
@@ -496,13 +496,13 @@ def run_experiment(num_subjects):
     return {
         'num_subjects': num_subjects,
         'true_beta_alpha': true_beta_alpha,
-        'confidence_interval': conf_int,
+        'confidence_interval': conf_int
     }
 
 
 def run_experiments_with_multiprocessing():
     num_subjects_list = [500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000]
-    output_file = '../result/autog_experiments/AUTOG.csv'
+    output_file = '../result/autog_experiments/AUTOG_UUB.csv'
     
     pd.DataFrame([], columns=['num_subjects', 'true_beta_alpha', 'confidence_interval']).to_csv(output_file, index=False)
 

@@ -487,7 +487,7 @@ def run_experiment(num_subjects):
     conf_int = bootstrap_confidence_interval(
         data=est_df, n_bootstraps=100, alpha=0.05, n_samples_autog=N_SAMPLES, 
         burn_in_autog=BURN_IN, network=network, num_of_subejects=NUM_OF_SUBJECTS, 
-        A_val=1, L_sample=None)
+        A_val=1, L_sample=GM_sample['L'])
     
     print("AUTO-G Confidence Interval:", conf_int)
 
@@ -502,7 +502,7 @@ def run_experiment(num_subjects):
 
 def run_experiments_with_multiprocessing():
     num_subjects_list = [500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000]
-    output_file = '../result/autog_experiments/AUTOG.csv'
+    output_file = '../result/autog_experiments/AUTOG_FIXED_L.csv'
     
     pd.DataFrame([], columns=['num_subjects', 'true_beta_alpha', 'confidence_interval']).to_csv(output_file, index=False)
 

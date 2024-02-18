@@ -429,65 +429,20 @@ def bootstrap_confidence_interval(data, n_bootstraps, alpha, n_samples_autog,
     return confidence_interval
     
 
-def run_experiment(num_subjects):
+def run_experiment(num_subjects, est_df, true_beta_alpha, network, GM_sample):
 
-    NUM_OF_SUBJECTS = num_subjects
-    N_SAMPLES = 10 * NUM_OF_SUBJECTS
-    BURN_IN = 10 * NUM_OF_SUBJECTS
-    USE_EXISTING_DATA = False
-
-    if USE_EXISTING_DATA:
-        # read in saved data
-        with open('./autog_binary_data/network.pkl', 'rb') as file:
-            network = pickle.load(file)
-        with open('./autog_binary_data/GM_sample.pkl', 'rb') as file:
-            GM_sample = pickle.load(file)
-        with open('./autog_binary_data/ind_set_1_apart.pkl', 'rb') as file:
-            ind_set_1_apart = pickle.load(file)
-        with open('./autog_binary_data/est_df.pkl', 'rb') as file:
-            est_df = pickle.load(file)
-    else:
-        network = util.create_random_network(n=NUM_OF_SUBJECTS, min_neighbors=1, max_neighbors=6)
-
-        # Sample a single realization from the specified Graphical Model
-        edge_types = gns.generate_edge_types("UUU")
-        GM_sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
-
-        ind_set_1_apart = maximal_independent_set.maximal_n_apart_independent_set(network, 1)
-        ind_set_1_apart = pd.DataFrame(list(ind_set_1_apart), columns=["subject"])
-        est_df = df_for_estimation(network=network, ind_set=ind_set_1_apart, sample=GM_sample)
-
-        # save data for future use
-        # with open('./autog_binary_data/network.pkl', 'wb') as file:
-        #     pickle.dump(network, file)
-        # with open('./autog_binary_data/GM_sample.pkl', 'wb') as file:
-        #     pickle.dump(GM_sample, file)
-        # with open('./autog_binary_data/ind_set_1_apart.pkl', 'wb') as file:
-        #     pickle.dump(ind_set_1_apart, file)
-        # with open('./autog_binary_data/est_df.pkl', 'wb') as file:
-        #     pickle.dump(est_df, file)
-
-    '''Evaluate True Network Causal Effects '''
-    # evaluate true causal effect using true f_Yi, true f_Li, n, and A_val (via beta_i_a and gibbs sampler 1)
-    true_f_Yi = dg.sample_given_boundary_binary
-    true_f_Li = dg.sample_given_boundary_binary
-
-    Y_A1 = gibbs_sampler_1(n_samples=N_SAMPLES, burn_in=BURN_IN, network=network, 
-                           f_Yi=true_f_Yi, f_Li=true_f_Li, verbose=False, 
-                           A_val=1)
-    
-    true_beta_alpha = np.mean([beta_i_a(Y_A1, i, 3) for i in range(0, NUM_OF_SUBJECTS)])
-    print("TRUE beta(alpha) =", true_beta_alpha)
+    n_samples_autog = 10 * num_subjects
+    burn_in_autog  = 10 * num_subjects
+    est_df = resample(est_df, n_samples=num_subjects)
 
     '''Estimate Network Causal Effects Via Auto-G'''
 
-    ## L layer: comparing our proposal v.s. auto-g paper's approach
     ## L_sample=GM_sample['L'] : using the original L sample 
     ## L_sample=None : generate new L samples based on the estimated f_Li
     conf_int = bootstrap_confidence_interval(
-        data=est_df, n_bootstraps=100, alpha=0.05, n_samples_autog=N_SAMPLES, 
-        burn_in_autog=BURN_IN, network=network, num_of_subejects=NUM_OF_SUBJECTS, 
-        A_val=1, L_sample=None)
+        data=est_df, n_bootstraps=100, alpha=0.05, n_samples_autog=n_samples_autog, 
+        burn_in_autog=burn_in_autog, network=network, num_of_subejects=num_subjects, 
+        A_val=1, L_sample=GM_sample['L'])
     
     print("AUTO-G Confidence Interval:", conf_int)
 
@@ -499,15 +454,37 @@ def run_experiment(num_subjects):
         'confidence_interval': conf_int,
     }
 
-
 def run_experiments_with_multiprocessing():
     num_subjects_list = [500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000]
-    output_file = '../result/autog_experiments/AUTOG.csv'
-    
+    output_file = '../result/autog_experiments/AUTOG_FIXED_NETWORK_FIXED_L.csv'
     pd.DataFrame([], columns=['num_subjects', 'true_beta_alpha', 'confidence_interval']).to_csv(output_file, index=False)
 
+    # Generate a single network realization and keep that fixed for all experiments
+    network = util.create_random_network(n=max(num_subjects_list), 
+                                         min_neighbors=1, 
+                                         max_neighbors=6)
+
+    '''Evaluate True Network Causal Effects '''
+    # evaluate true causal effect using true f_Yi, true f_Li, n, and A_val (via beta_i_a and gibbs sampler 1)
+    true_f_Yi = dg.sample_given_boundary_binary
+    true_f_Li = dg.sample_given_boundary_binary
+
+    Y_A1 = gibbs_sampler_1(n_samples=max(num_subjects_list), 
+                           burn_in=10*max(num_subjects_list), 
+                           network=network, f_Yi=true_f_Yi, f_Li=true_f_Li, 
+                           verbose=False, A_val=1)
+    
+    true_beta_alpha = np.mean([beta_i_a(Y_A1, i, 3) for i in range(0, max(num_subjects_list))])
+    print("TRUE beta(alpha) =", true_beta_alpha)
+
+    edge_types = gns.generate_edge_types("UUU")
+    GM_sample = dg.sample_L_A_Y(n_samples=1, network=network, edge_types=edge_types)[0]
+    ind_set_1_apart = maximal_independent_set.maximal_n_apart_independent_set(network, 1)
+    ind_set_1_apart = pd.DataFrame(list(ind_set_1_apart), columns=["subject"])
+    est_df = df_for_estimation(network=network, ind_set=ind_set_1_apart, sample=GM_sample)
+
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures = {executor.submit(run_experiment, num_subjects): num_subjects for num_subjects in num_subjects_list}
+        futures = [executor.submit(run_experiment, num_subjects, est_df, true_beta_alpha, network, GM_sample) for num_subjects in num_subjects_list]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
             pd.DataFrame([result]).to_csv(output_file, mode='a', index=False, header=False)
