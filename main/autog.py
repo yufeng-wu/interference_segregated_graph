@@ -504,7 +504,7 @@ def run_experiment(num_subjects):
 
 
 def run_experiments_with_multiprocessing():
-    num_subjects_list = [500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000]
+    num_subjects_list = [1000, 3000, 5000, 7000, 9000]
     output_file = '../result/autog_experiments/AUTOG.csv'
     
     pd.DataFrame([], columns=['num_subjects', 'true_beta_alpha', 'confidence_interval']).to_csv(output_file, index=False)
