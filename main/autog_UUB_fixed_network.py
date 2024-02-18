@@ -64,7 +64,7 @@ def df_for_estimation(network, ind_set, sample):
 
         # get the neighbors of i
         N_i = util.kth_order_neighborhood(network, i, 1)
-        neighbors_count = len(N_i) if len(N_i) > 0 else 0
+        neighbors_count = len(N_i) if len(N_i) > 0 else 1
         normalizing_weight = 1 / neighbors_count # TODO
 
         # Get a list with sample.loc[j]['Y'] for each j in N_i
@@ -359,7 +359,7 @@ def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog,
         l_i = inputs['L_self']
         a_i = inputs['A_self']
         
-        neighbors_count = len(inputs['Y_neighbors']) if len(inputs['Y_neighbors']) > 0 else 0
+        neighbors_count = len(inputs['Y_neighbors']) if len(inputs['Y_neighbors']) > 0 else 1
         normalizing_weight = 1 / neighbors_count #TODO
             
         l_j = inputs['L_neighbors']
@@ -393,7 +393,7 @@ def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog,
         return: proba of li = 1
         '''
         l_i = 1
-        neighbors_count = len(inputs['L_neighbors']) if len(inputs['L_neighbors']) > 0 else 0
+        neighbors_count = len(inputs['L_neighbors']) if len(inputs['L_neighbors']) > 0 else 1
         normalizing_weight = 1 / neighbors_count #TODO
         l_j = inputs['L_neighbors']
         w_ij_l = normalizing_weight
