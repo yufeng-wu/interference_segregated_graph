@@ -155,6 +155,8 @@ $$
 (b): Apply bayes rule, then cancel out the common $\sum_{\textbf{l}'}exp(W(\textbf{l}'))$ which does not depend on $i$. Then, apply regularization similarly to how we specify the form of $f(Y|-)$. The simplification from $W(\textbf{l})$ to $L_i * H_i(L_i) + \sum_{\{i,j\} \in \mathcal{G}_\mathcal{E}} w_{i,j}^L L_i L_j$. **Note: the original paper's form is not exactly this as it considers $L$ to be a vector of confounders. Details are at page 15 of the paper.**
 
 
+
+
 ### Estimation Process:
 
 We have specified the **parametric form / functional shape** of the distribution $f(Y_i = y_i \mid \textbf{Y}_{-i}=\textbf{y}_{-i}, \textbf{a}, \textbf{l})$. Therefore, we can estimate the parameters $\tau_Y$ using coding-type maximum likelihood. That is, we are trying to find the parameters $\hat{\tau_Y}$ that maximizes the likelihood of getting $Y_i$ in our sample given $\textbf{Y}_{-i}=\textbf{y}_{-i}, \textbf{a}, \textbf{l}$ (actually, given $O_i, a_i, l_i$).
