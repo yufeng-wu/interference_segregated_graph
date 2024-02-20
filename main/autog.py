@@ -65,7 +65,7 @@ def df_for_estimation(network, ind_set, sample):
         # get the neighbors of i
         N_i = util.kth_order_neighborhood(network, i, 1)
         neighbors_count = len(N_i) if len(N_i) > 0 else 1
-        normalizing_weight = 1 / neighbors_count # TODO
+        normalizing_weight = 1 / neighbors_count # Weight Factor
 
         # Get a list with sample.loc[j]['Y'] for each j in N_i
         l_j = [sample.loc[j]['L'] for j in N_i]
@@ -360,7 +360,7 @@ def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog,
         a_i = inputs['A_self']
             
         neighbors_count = len(inputs['Y_neighbors']) if len(inputs['Y_neighbors']) > 0 else 1
-        normalizing_weight = 1 / neighbors_count #TODO
+        normalizing_weight = 1 / neighbors_count #Weight Factor
             
         l_j = inputs['L_neighbors']
         a_j = inputs['A_neighbors']
@@ -394,7 +394,7 @@ def estimate_autog_beta_alpha(est_df_sample, n_samples_autog, burn_in_autog,
         '''
         l_i = 1
         neighbors_count = len(inputs['L_neighbors']) if len(inputs['L_neighbors']) > 0 else 1
-        normalizing_weight = 1 / neighbors_count #TODO
+        normalizing_weight = 1 / neighbors_count #Weight Factor
         l_j = inputs['L_neighbors']
         w_ij_l = normalizing_weight
 
@@ -504,7 +504,7 @@ def run_experiment(num_subjects):
 
 
 def run_experiments_with_multiprocessing():
-    num_subjects_list = [1000, 3000, 5000, 7000, 9000]
+    num_subjects_list = [1000]#[1000, 3000, 5000, 7000, 9000]
     output_file = '../result/autog_experiments/AUTOG.csv'
     
     pd.DataFrame([], columns=['num_subjects', 'true_beta_alpha', 'confidence_interval']).to_csv(output_file, index=False)
