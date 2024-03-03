@@ -165,10 +165,10 @@ def bootstrap_causal_effect_estimates_parallel(n_units_list, n_bootstraps, true_
 
 def main():
     # set up
-    n_units_true_causal_effect = 5000
+    n_units_true_causal_effect = 8000
     n_bootstraps = 100
-    n_units_list = [3000, 4000, 5000]
-    burn_in = 200
+    n_units_list = [6000, 7000, 8000]
+    burn_in = 500
 
     # evaluate true network causal effects
     network = random_network_adjacency_matrix(n_units_true_causal_effect, 1, 6)
