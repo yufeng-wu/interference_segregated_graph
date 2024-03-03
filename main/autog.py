@@ -167,7 +167,7 @@ def main():
     # set up
     n_units_true_causal_effect = 5000
     n_bootstraps = 100
-    n_units_list = [200, 500, 1000, 2000]
+    n_units_list = [3000, 4000, 5000]
     burn_in = 200
 
     # evaluate true network causal effects
