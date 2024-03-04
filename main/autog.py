@@ -313,7 +313,7 @@ def UBB_experiment():
 
 
 if __name__ == "__main__":
-    UBB_experiment()
+    UUU_experiment()
 
 
 # TODO: check consistency of autog
