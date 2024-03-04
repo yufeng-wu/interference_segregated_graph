@@ -53,8 +53,8 @@ def gibbs_sample_Y(network, L, A, params, burn_in=200):
     for m in range(burn_in):
         for i in range(len(network)):
             pYi_given_rest = expit(params[0] + params[1]*L[i] + params[2]*A[i] +
-                                   params[3]*np.dot(A, network[i, :]) -
-                                   params[4]*np.dot(L, network[i, :]) +
+                                   params[3]*np.dot(L, network[i, :]) -
+                                   params[4]*np.dot(A, network[i, :]) +
                                    params[5]*np.dot(Y, network[i, :]))
             Y[i] = np.random.binomial(1, pYi_given_rest)
 
@@ -69,7 +69,7 @@ def npll_L(params, L, network):
 
 def npll_Y(params, L, A, Y, network):
 
-    pY1 = expit((params[0] + params[1]*L + params[2]*A + params[3]*(A@network) + params[4]*(L@network) + params[5]*(Y@network)))
+    pY1 = expit((params[0] + params[1]*L + params[2]*A + params[3]*(L@network) + params[4]*(A@network) + params[5]*(Y@network)))
     pY = Y*pY1 + (1-Y)*(1-pY1)
     pY = np.where(pY == 0, 1e-10, pY) # replace 0 with a small const to ensure numerical stability
     return -np.sum(np.log(pY))
@@ -92,8 +92,8 @@ def estimate_causal_effects(network, A_value, params_L, params_Y, burn_in=100, K
             L[i] = np.random.binomial(1, pLi_given_rest)
 
             pYi_given_rest = expit(params_Y[0] + params_Y[1]*L[i] + params_Y[2]*A[i] +
-                                   params_Y[3]*np.dot(A, network[i, :]) -
-                                   params_Y[4]*np.dot(L, network[i, :]) +
+                                   params_Y[3]*np.dot(L, network[i, :]) -
+                                   params_Y[4]*np.dot(A, network[i, :]) +
                                    params_Y[5]*np.dot(Y, network[i, :]))
             Y[i] = np.random.binomial(1, pYi_given_rest)
 
@@ -175,7 +175,7 @@ def main():
 
     true_L = np.array([-0.3, 0.4])
     true_A = np.array([0.3, -0.4, -0.7, -0.2])
-    true_Y = np.array([-0.2, 1, -1.5, 0.4, -0.3, 0.4])
+    true_Y = np.array([-0.2, 1, -1.5, -0.3, 0.4, 0.4])
 
     Y_A1 = estimate_causal_effects(network, A_value=1, params_L=true_L, params_Y=true_Y, burn_in=200, K=100, N=3)
     Y_A0 = estimate_causal_effects(network, A_value=0, params_L=true_L, params_Y=true_Y, burn_in=200, K=100, N=3)
