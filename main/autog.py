@@ -247,8 +247,8 @@ def UUU_experiment():
     true_A = np.array([0.3, -0.4, -0.7, -0.2])
     true_Y = np.array([0.2, 1, 1.5, -0.3, 1, -0.4])
 
-    Y_A1 = estimate_causal_effects(network, A_value=1, params_L=true_L, params_Y=true_Y, burn_in=200, K=100, N=3)
-    Y_A0 = estimate_causal_effects(network, A_value=0, params_L=true_L, params_Y=true_Y, burn_in=200, K=100, N=3)
+    Y_A1 = estimate_causal_effects(network, A_value=1, params_L=true_L, params_Y=true_Y, burn_in=200, K=50, N=3)
+    Y_A0 = estimate_causal_effects(network, A_value=0, params_L=true_L, params_Y=true_Y, burn_in=200, K=50, N=3)
     true_causal_effect = Y_A1 - Y_A0
     print("True Causal Effects:", true_causal_effect)
 
