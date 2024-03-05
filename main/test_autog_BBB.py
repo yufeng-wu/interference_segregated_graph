@@ -2,10 +2,10 @@ from autog import *
 
 def main():
     # set up
-    n_units_true_causal_effect = 10# 9000
-    n_bootstraps = 3# 100
-    n_units_list = [10, 20]#[1000, 3000, 5000, 7000, 9000]
-    burn_in = 10#200
+    n_units_true_causal_effect = 9000
+    n_bootstraps = 100
+    n_units_list = [1000, 3000, 5000, 7000, 9000]
+    burn_in = 200
     which_test = "BBB"
     
     # evaluate true network causal effects 
