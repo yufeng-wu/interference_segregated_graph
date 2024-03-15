@@ -9,7 +9,7 @@ References:
 - Maximal Independent Set algorithm implementation: https://www.geeksforgeeks.org/maximal-independent-set-in-an-undirected-graph/#
 '''
 
-from util import create_random_network
+from .util import create_random_network
 
 # from collections import deque
 # import random
@@ -151,14 +151,16 @@ def maximal_n_apart_independent_set(graph, n, verbose=False):
 
     while active_nodes:
         if verbose and len(active_nodes) % 1000 < 2:
-            print("[PROGRESS] maximal_n_apart_independent_set need to process", len(active_nodes), "more nodes.") 
-        #current_vertex = random.choice(tuple(active_nodes))  # Choose a vertex from active nodes
-        current_vertex = active_nodes.pop()
-		# active_nodes.remove(current_vertex)
-        independent_set.add(current_vertex)
+            print("[PROGRESS] maximal_n_apart_independent_set need to process", 
+                  len(active_nodes), "more nodes.")
+        
+        # sample a random vertex to be the next element in the independent set
+        current = random.sample(active_nodes, 1)[0]
+        active_nodes.remove(current)
+        independent_set.add(current)
 
-        # Get all vertices within n layers and mark them as inactive
-        to_deactivate = get_vertices_within_n_layers(graph, current_vertex, n)
+        # get all vertices within n layers and mark them as inactive
+        to_deactivate = get_vertices_within_n_layers(graph, current, n)
         active_nodes.difference_update(to_deactivate)
 
     return independent_set
