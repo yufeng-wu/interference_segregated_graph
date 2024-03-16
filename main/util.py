@@ -20,41 +20,54 @@ def kth_order_neighborhood(network, node, k):
 
     return neighbors
 
+
 def create_random_network(n, min_neighbors, max_neighbors):
-    # Ensure that the sum of the degree sequence is even
     while True:
         degree_sequence = [random.randint(min_neighbors, max_neighbors) for _ in range(n)]
         if sum(degree_sequence) % 2 == 0:
             break
-
-    # Create a graph using the configuration model
     g = nx.configuration_model(degree_sequence)
-
-    # Remove parallel edges and self-loops
     g = nx.Graph(g)
     g.remove_edges_from(nx.selfloop_edges(g))
-
-    return nx.to_dict_of_lists(g)
-
-def random_network_adjacency_matrix(n, min_neighbors, max_neighbors):
-
-    # Ensure that the sum of the degree sequence is even
-    while True:
-        degree_sequence = [random.randint(min_neighbors, max_neighbors) for _ in range(n)]
-        if sum(degree_sequence) % 2 == 0:
-            break
-
-    # Create a graph using the configuration model
-    g = nx.configuration_model(degree_sequence)
-
-    # Remove parallel edges and self-loops
-    g = nx.Graph(g)
-    g.remove_edges_from(nx.selfloop_edges(g))
-
-    # Convert to adjacency matrix
     adj_matrix = nx.adjacency_matrix(g).toarray()
 
-    return adj_matrix
+    return nx.to_dict_of_lists(g), adj_matrix
+
+# def create_random_network(n, min_neighbors, max_neighbors):
+#     # Ensure that the sum of the degree sequence is even
+#     while True:
+#         degree_sequence = [random.randint(min_neighbors, max_neighbors) for _ in range(n)]
+#         if sum(degree_sequence) % 2 == 0:
+#             break
+
+#     # Create a graph using the configuration model
+#     g = nx.configuration_model(degree_sequence)
+
+#     # Remove parallel edges and self-loops
+#     g = nx.Graph(g)
+#     g.remove_edges_from(nx.selfloop_edges(g))
+
+#     return nx.to_dict_of_lists(g)
+
+# def random_network_adjacency_matrix(n, min_neighbors, max_neighbors):
+
+#     # Ensure that the sum of the degree sequence is even
+#     while True:
+#         degree_sequence = [random.randint(min_neighbors, max_neighbors) for _ in range(n)]
+#         if sum(degree_sequence) % 2 == 0:
+#             break
+
+#     # Create a graph using the configuration model
+#     g = nx.configuration_model(degree_sequence)
+
+#     # Remove parallel edges and self-loops
+#     g = nx.Graph(g)
+#     g.remove_edges_from(nx.selfloop_edges(g))
+
+#     # Convert to adjacency matrix
+#     adj_matrix = nx.adjacency_matrix(g).toarray()
+
+#     return adj_matrix
 
 def create_cycle_graph(n):
     '''

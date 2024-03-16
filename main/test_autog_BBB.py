@@ -21,7 +21,7 @@ def main():
     print("True Causal Effects:", true_causal_effect)
 
     # Using the parallelized function for auto-g estimation (BBB)
-    est_causal_effects = bootstrap_autog(
+    est_causal_effects = autog_consistency_test(
         L_edge_type="B",
         A_edge_type="B",
         Y_edge_type="B",
@@ -33,10 +33,11 @@ def main():
         burn_in=burn_in
     )
 
+    # save the estimated causal effects together with the true causal effect
     df = pd.DataFrame.from_dict(est_causal_effects, orient='index').transpose()
     df['True Effect'] = true_causal_effect
     df.to_csv(f"./autog_{which_test}_results.csv", index=False)
-    print(f"Results saved.")
+    print("Results saved.")
 
 if __name__ == "__main__":
     main()

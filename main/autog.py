@@ -1,10 +1,19 @@
-from scipy.optimize import minimize
-from scipy.special import expit
-import pandas as pd
-import numpy as np
-from util import random_network_adjacency_matrix
+from util import create_random_network, kth_order_neighborhood
+from maximal_independent_set import maximal_n_apart_independent_set
+
 from concurrent.futures import ProcessPoolExecutor
 import networkx as nx
+
+import pandas as pd
+import numpy as np
+
+from scipy.optimize import minimize
+from scipy.special import expit
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
 
 def ring_adjacency_matrix(num_units):
 
@@ -45,25 +54,34 @@ def biedge_sample_Y(network, L, A, params):
     U = np.random.normal(loc=params[0], scale=params[1], size=network.shape)
     U = np.triu(U) + np.triu(U, 1).T  # make U symmetric
     U = np.where(network == 1, U, network)  # apply network mask
-    print("Avg of U.sum:", np.mean(U.sum(axis=0)))
+
     pY = expit(params[2] + params[3]*L + params[4]*A + params[5]*(L@network) + 
                params[6]*(A@network) + params[7]*U.sum(axis=0))
+    
     Y = np.random.binomial(1, pY)
 
     return Y
 
-def gibbs_sample_L(network, params, burn_in=200):
+def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every=1):
+    # TODO: this can be changed to a more general version: the user specify 
+    # how much to thin autocorrealtion, and this funciton can return a list 
+    # of "indepdnet" gibbs sample Ls. The user will also specify how many samples
+    # they want.
 
+    L_samples = []
     # initialize a vector of Ls
-    L = np.random.binomial(1, 0.5, len(network))
+    L = np.random.binomial(1, 0.5, len(network_adj_mat))
 
     # keep sampling an L vector till burn in is done
-    for m in range(burn_in):
-        for i in range(len(network)):
-            pLi_given_rest = expit(params[0] + params[1]*np.dot(L, network[i, :]))
+    for gibbs_iter in range(burn_in + n_draws*select_every):
+        for i in range(len(network_adj_mat)):
+            pLi_given_rest = expit(params[0] + params[1]*np.dot(L, network_adj_mat[i, :]))
             L[i] = np.random.binomial(1, pLi_given_rest)
 
-    return L
+        if gibbs_iter >= burn_in and gibbs_iter % select_every == 0:
+            L_samples.append(L.copy())
+    
+    return L_samples
 
 def gibbs_sample_A(network, L, params, burn_in=200):
 
@@ -94,9 +112,9 @@ def gibbs_sample_Y(network, L, A, params, burn_in=200):
 
     return Y
 
-def npll_L(params, L, network):
+def npll_L(params, L, network_adj_mat):
 
-    pL1 = expit(params[0] + params[1]*(L@network))
+    pL1 = expit(params[0] + params[1]*(L@network_adj_mat))
     pL = L*pL1 + (1-L)*(1-pL1)
     pL = np.where(pL == 0, 1e-10, pL) # replace 0 with a small const to ensure numerical stability
     return -np.sum(np.log(pL))
@@ -149,20 +167,105 @@ def estimate_causal_effects_B_B(network, A_value, params_L, params_Y, K=100):
     
     return np.mean(matrix_Ys)
 
-def estimate_causal_effects_U_B(network, A_value, params_L, params_Y, 
-                                burn_in=200, K=100):
-    matrix_Ys = []
+def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, 
+                                burn_in=200, n_simulations=100):
+    ''' L layer is Undirected (---), Y layer is Bidirected (<->) '''
+    contrasts = []
 
-    for _ in range(K):
-        L = gibbs_sample_L(network, params_L, burn_in)
-        A = np.array([A_value] * len(L))
-        Y = biedge_sample_Y(network, L, A, params_Y)
+    for _ in range(n_simulations):
+        
+        # TODO: This below can be optimized / vectorized by drawing n_simulations draws all at once
+        L = gibbs_sample_L(network_adj_mat, params_L, burn_in, n_draws=1, select_every=1)[0]
+        A1 = np.array([1] * len(L))
+        A0 = np.array([0] * len(L))
+        Y_A1 = biedge_sample_Y(network_adj_mat, L, A1, params_Y)
+        Y_A0 = biedge_sample_Y(network_adj_mat, L, A0, params_Y)
 
-        matrix_Ys.append(Y.copy())
+        contrasts.append(Y_A1 - Y_A0)
     
-    return np.mean(matrix_Ys)
+    return np.mean(contrasts)
 
-def _autog(args):
+def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
+                               n_draws_from_pL, gibbs_select_every, burn_in):
+    ''' 
+    L layer is Undirected (---), Y layer is Bidirected (<->) 
+    
+    Inputs:
+        - network_dict
+        - network_adj_mat
+        
+        - gibbs_select_every: select every gibbs_select_every-th element of 
+        the Gibbs samples to reduce auto-correlation.
+    '''
+
+    # 1) estimate the parameters to resample L layer
+    params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), 
+                        args=(L, network_adj_mat)).x
+
+    # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
+    ind_set_1_hop = maximal_n_apart_independent_set(network_dict, n=1)
+    df = assemble_estimation_df(network_dict, ind_set_1_hop, L, A, Y)
+
+    features = df.drop(['i', 'y_i'], axis=1) 
+    target = df['y_i']
+
+    model = LogisticRegression(max_iter=1000)
+    model.fit(features, target)
+
+    # 3) use params_L and model to estimate causal effects:
+    #   - first, get independent realizations of p(L) using Gibbs sampling
+    #     and thin auto-correlation 
+    L_draws = gibbs_sample_L(network_adj_mat=network_adj_mat, params=params_L, 
+                             burn_in=burn_in, n_draws=n_draws_from_pL,
+                             select_every=gibbs_select_every)
+
+    # a list of lists
+    # each inner list is the estimated individual-level constrast between
+    # pred_Y_i_given_intervention_1 - pred_Y_i_given_intervention_0
+    contrasts = []
+    
+    for L_draw in L_draws:
+        l_j_sums = {i: np.sum([L_draw[nb] for nb in network_dict[i]]) 
+                    for i in network_dict}
+        
+        feature_vals_1 = np.array([
+            [1, L_draw[i], l_j_sums[i], 1 * len(network_dict[i])]
+            for i in network_dict
+        ])
+        feature_vals_0 = np.array([
+            [0, L_draw[i], l_j_sums[i], 0 * len(network_dict[i])]
+            for i in network_dict
+        ])
+        
+        # convert to DataFrames with named columns
+        feature_vals_1_df = pd.DataFrame(feature_vals_1, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
+        feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
+        
+        # the two variables below are vectors with n rows
+        pred_Y_intervene_A1 = model.predict(feature_vals_1_df)
+        pred_Y_intervene_A0 = model.predict(feature_vals_0_df)
+        
+        contrasts.append(pred_Y_intervene_A1 - pred_Y_intervene_A0)
+
+    return np.mean(contrasts)
+
+# def bootstrap_causal_effects_U_B(n_units_list, n_bootstraps, true_L, true_A, 
+#                                  true_Y, burn_in):
+#     '''
+#     Bootstrap a confidence interval of causal effects computed using 
+#     causal_effects_U_B
+#     '''
+#     estimates = {}
+#     with ProcessPoolExecutor() as executor:
+#         for n_units in n_units_list:
+#             args = [(n_units, L_edge_type, A_edge_type, Y_edge_type, true_L, 
+#                      true_A, true_Y, burn_in) for _ in range(n_bootstraps)]
+#             results = executor.map(autog, args)
+#             estimates[f'n units {n_units}'] = list(results)
+
+#     return estimates
+
+def autog(network_adj_mat, L, A, Y, burn_in):
     ''' 
     Generate a network realization following L_edge_type, A_edge_type, and 
     Y_edge_type, then estimate causal effects using auto-g.
@@ -172,109 +275,153 @@ def _autog(args):
     specification, but it produces biased estimates when there is 
     latent homophily at the L or the Y layer. 
     '''
-    n_units, L_edge_type, A_edge_type, Y_edge_type, true_L, true_A, true_Y, burn_in = args
-
-    # create a single network realization using the true parameters
-    network = random_network_adjacency_matrix(n_units, 1, 6)
-    if L_edge_type == "U":
-        L = gibbs_sample_L(network, params=true_L, burn_in=burn_in)
-    elif L_edge_type == "B":
-        L = biedge_sample_L(network, params=true_L)
-
-    if A_edge_type == "U":
-        A = gibbs_sample_A(network, L, params=true_A, burn_in=burn_in)
-    elif A_edge_type == "B":
-        A = biedge_sample_A(network, L, params=true_A)
-
-    if Y_edge_type == "U":
-        Y = gibbs_sample_Y(network, L, A, params=true_Y, burn_in=burn_in)
-    elif Y_edge_type == "B":
-        Y = biedge_sample_Y(network, L, A, params=true_Y)
-
-    # use L, A, Y to estimate parameters using auto-g regardless of whether the 
-    # true edge types are UUU or not.
-    params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), 
-                        args=(L, network)).x
-    params_Y = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), 
-                        args=(L, A, Y, network)).x
+    # estimate parameters using autog method
+    params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), args=(L, network_adj_mat)).x
+    params_Y = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), args=(L, A, Y, network_adj_mat)).x
 
     # compute causal effects using estimated parameters
-    Y_A1 = estimate_causal_effects_U_U(network, 1, params_L, params_Y, 
-                                       burn_in=burn_in)
-    Y_A0 = estimate_causal_effects_U_U(network, 0, params_L, params_Y, 
-                                       burn_in=burn_in)
+    Y_A1 = estimate_causal_effects_U_U(network_adj_mat, 1, params_L, params_Y, burn_in=burn_in)
+    Y_A0 = estimate_causal_effects_U_U(network_adj_mat, 0, params_L, params_Y, burn_in=burn_in)
     
     return Y_A1 - Y_A0
 
-def bootstrap_autog(n_units_list, L_edge_type, A_edge_type, Y_edge_type, 
-                    n_bootstraps, true_L, true_A, true_Y, burn_in):
-    '''
-    Bootstrap a confidence interval of causal effects computed using auto-g, 
-    with data generated from a graphical model specified with L_edge_type,
-    A_edge_type, and Y_edge_type.
-    '''
-    estimates = {}
-    with ProcessPoolExecutor() as executor:
-        for n_units in n_units_list:
-            args = [(n_units, L_edge_type, A_edge_type, Y_edge_type, true_L, 
-                     true_A, true_Y, burn_in) for _ in range(n_bootstraps)]
-            results = executor.map(_autog, args)
-            estimates[f'n units {n_units}'] = list(results)
-
-    return estimates
-
-
-
-def BBB_experiment():
-    # set up
-    n_units_true_causal_effect = 9000
-    n_bootstraps = 100
-    n_units_list = [1000, 3000, 5000, 7000, 9000]
-    burn_in = 200
-    
-    # evaluate true network causal effects 
-    network = random_network_adjacency_matrix(n_units_true_causal_effect, 1, 6)
-
-    true_L = np.array([0, 1, -0.3, 0.4])
-    true_A = np.array([0, 1, 0.3, -0.4, -0.7, 0.2])
-    true_Y = np.array([0, 1, 0.5, 0.1, 1, -0.3, 0.6, 0.4])
-
-    Y_A1 = estimate_causal_effects_B_B(network, 1, true_L, true_Y, K=50)
-    Y_A0 = estimate_causal_effects_B_B(network, 0, true_L, true_Y, K=50)
-    true_causal_effect = Y_A1 - Y_A0
-
-    # Using the parallelized function for auto-g estimation (BBB)
-    est_causal_effects = bootstrap_autog(
-        L_edge_type="B",
-        Y_edge_type="B",
-        n_units_list=n_units_list, 
-        n_bootstraps=n_bootstraps, 
-        true_L=true_L, 
-        true_A=true_A, 
-        true_Y=true_Y,
-        burn_in=burn_in
+def autog_wrapper(args_dict):
+    """
+    Wrapper for the autog function to fit the common interface.
+    """
+    return autog(
+        network_adj_mat=args_dict['network_adj_mat'], 
+        L=args_dict['L'], 
+        A=args_dict['A'], 
+        Y=args_dict['Y'], 
+        burn_in=args_dict['burn_in']
     )
 
-    df = pd.DataFrame.from_dict(est_causal_effects, orient='index').transpose()
-    df['True Effect'] = true_causal_effect
-    df.to_csv("./autog_BBB_results.csv", index=False)
-    print(f"Results saved.")
+def estimate_causal_effects_U_B_wrapper(args_dict):
+    """
+    Wrapper for the estimate_causal_effects_U_B function to fit the common interface.
+    """
+    return estimate_causal_effects_U_B(
+        network_dict=args_dict['network_dict'], 
+        network_adj_mat=args_dict['network_adj_mat'], 
+        L=args_dict['L'], 
+        A=args_dict['A'], 
+        Y=args_dict['Y'], 
+        n_draws_from_pL=args_dict['n_draws_from_pL'], 
+        gibbs_select_every=args_dict['gibbs_select_every'], 
+        burn_in=args_dict['burn_in']
+    )
 
-    # create a single network realization using true parameters
-    # L = biedge_sample_L(network, true_L)
-    # A = biedge_sample_A(network, L, true_A)
-    # Y = biedge_sample_Y(network, L, A, true_Y)
-    # print("means", np.mean(L), np.mean(A), np.mean(Y))
+def consistency_test_helper(args):
+    '''
+    estimate_with_wrapper is a wrapper function, such as autog_wrapper()
+    '''
+    
+    estimate_with_wrapper, n_units, L_edge_type, A_edge_type, Y_edge_type, \
+        true_L, true_A, true_Y, burn_in, args_dict = args
+    
+    def sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, 
+                true_L, true_A, true_Y, burn_in):
+        if L_edge_type == "U":
+            L = gibbs_sample_L(network_adj_mat, params=true_L, burn_in=burn_in, 
+                            n_draws=1, select_every=1)[0]
+        elif L_edge_type == "B":
+            L = biedge_sample_L(network_adj_mat, params=true_L)
 
-    # # estimate parameters of the DGP
-    # est_params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), args=(L, network)).x
-    # est_params_Y = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), args=(L, A, Y, network)).x
+        if A_edge_type == "U":
+            A = gibbs_sample_A(network_adj_mat, L, params=true_A, burn_in=burn_in)
+        elif A_edge_type == "B":
+            A = biedge_sample_A(network_adj_mat, L, params=true_A)
 
-    # est_Y_A1 = estimate_causal_effects(network, 1, est_params_L, est_params_Y, 200, 100, 3)
-    # est_Y_A0 = estimate_causal_effects(network, 0, est_params_L, est_params_Y, 200, 100, 3)
-    # print("Estimated Causal Effects:", est_Y_A1 - est_Y_A0)
+        if Y_edge_type == "U":
+            Y = gibbs_sample_Y(network_adj_mat, L, A, params=true_Y, burn_in=burn_in)
+        elif Y_edge_type == "B":
+            Y = biedge_sample_Y(network_adj_mat, L, A, params=true_Y)
+            
+        return L, A, Y 
+    
+    # TODO: should i resample network or no?
+    
+    # "sample" a network from the true underlyding distribution of networks 
+    network_dict, network_adj_mat = create_random_network(n_units, 1, 6)
+    
+    # sample a realization of L, A, Y from the random network
+    L, A, Y = sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, true_L, true_A, true_Y, burn_in)
+    
+    # add the following information to args_dict
+    args_dict['network_dict'] = network_dict
+    args_dict['network_adj_mat'] = network_adj_mat
+    args_dict['L'] = L
+    args_dict['A'] = A
+    args_dict['Y'] = Y
+    args_dict['burn_in'] = burn_in
+    
+    return estimate_with_wrapper(args_dict)
 
+def consistency_test(estimate_with_wrapper, n_bootstraps, n_units_list, 
+                     L_edge_type, A_edge_type, Y_edge_type, 
+                     true_L, true_A, true_Y, burn_in, args_dict):
+    '''
+    Create a confidence interval of causal effects computed via 
+    estimate_with_wrapper, using data generated from a graphical model 
+    specified with L_edge_type, A_edge_type, and Y_edge_type.
+    
+    Arguments:
+        - estimate_with_wrapper: a function
+        - args_dict: a dictionary of arguments to be passed into estimate_with_wrapper
+    '''
+    estimates = {}
+    
+    with ProcessPoolExecutor() as executor:
+        for n_units in n_units_list:
+            args = [(estimate_with_wrapper, n_units, L_edge_type, A_edge_type, Y_edge_type, 
+                     true_L, true_A, true_Y, burn_in, args_dict) for _ in range(n_bootstraps)]
+            results = executor.map(consistency_test_helper, args)
+            estimates[f'n units {n_units}'] = list(results)
+            
+    return estimates
 
+def assemble_estimation_df(network, ind_set, L, A, Y):
+    '''
+    Creates dataframe for causal effect estimation. 
+    
+    Inputs:
+        - network
+        - ind_set: a maximal 1-apart independent set obtained from the network
+        - sample: a single realization (L, A, Y) of the network where L, A, Y 
+                  are vectors of the shape (1, size of network).
+    
+    Return:
+        A pd.DataFrame object that with the following entries for each element 
+        of the ind_set:
+            'i': id of the subject
+            'y_i': the value of Y_i in the network realization
+            'a_i': the value of A_i in the network realization
+            'l_i': the value of L_i in the network realization
+            'l_j_sum': sum of [L_j for j in neighbors of i]
+            'a_j_sum': sum of [A_j for j in neighbors of i]
+    '''
+    data_list = []
+
+    for i in ind_set:
+        l_i = L[i]
+        a_i = A[i]
+        y_i = Y[i]
+
+        # get the neighbors of i as a list
+        N_i = kth_order_neighborhood(network, i, 1)
+
+        data_list.append({
+            'i' : i,
+            'y_i': y_i,
+            'a_i': a_i,
+            'l_i': l_i,
+            'l_j_sum': np.sum([L[j] for j in N_i]),
+            'a_j_sum': np.sum([A[j] for j in N_i]),
+        })
+
+    df = pd.DataFrame(data_list) 
+    return df   
 
 
 # TODO: check consistency of autog

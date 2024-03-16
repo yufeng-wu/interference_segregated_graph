@@ -9,7 +9,7 @@ References:
 - Maximal Independent Set algorithm implementation: https://www.geeksforgeeks.org/maximal-independent-set-in-an-undirected-graph/#
 '''
 
-from .util import create_random_network
+from util import create_random_network
 
 # from collections import deque
 # import random
