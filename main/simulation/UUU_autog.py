@@ -1,7 +1,7 @@
 # UUU_autog means DGP is UUU and estimation is done via autog
 
 import sys
-sys.path.append('/Users/dingding/Desktop/Thesis/code/main')
+sys.path.append('..')
 from autog import *
 
 

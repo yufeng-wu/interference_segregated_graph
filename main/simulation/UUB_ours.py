@@ -1,7 +1,7 @@
 # UUB_autog means DGP is UUB and estimation is done via our estimation methods
 
 import sys
-sys.path.append('/Users/dingding/Desktop/Thesis/code/main')
+sys.path.append('..')
 from autog import *
 from our_estimation_methods import *
 
