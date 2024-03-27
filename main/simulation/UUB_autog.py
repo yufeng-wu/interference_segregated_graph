@@ -5,15 +5,14 @@ sys.path.append('..')
 from autog import *
 from our_estimation_methods import *
 
-
 ''' set up '''
 L_EDGE_TYPE = 'U'
 A_EDGE_TYPE = 'U'
 Y_EDGE_TYPE = 'B'
 
-TRUE_CAUSAL_EFFECT_N_UNIT = 1000
+TRUE_CAUSAL_EFFECT_N_UNIT = 2000
 AVG_DEGREE = 5
-N_UNITS_LIST = [100, 200, 300, 400, 500]
+N_UNITS_LIST = [500, 1000, 1500, 2000]
 N_ESTIMATES = 5 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 100 # the number of L samples to draw 
 BURN_IN = 200
