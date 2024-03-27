@@ -41,7 +41,7 @@ def main():
     
     ''' evaluate true network causal effects '''
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE)
-    causal_effect_true = causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, N_SIMULATIONS)
+    causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, N_SIMULATIONS)
     
     print("True causal effect:", causal_effect_true)
     
@@ -55,7 +55,7 @@ def main():
     ''' save results '''
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()
     df['True Effect'] = causal_effect_true
-    df.to_csv(f"./UUB_autog.csv", index=False)
+    df.to_csv(f"./result/UUB_autog.csv", index=False)
 
 
 if __name__ == "__main__":
