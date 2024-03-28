@@ -56,7 +56,7 @@ def main():
     ''' save results '''
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()
     df['True Effect'] = causal_effect_true
-    df.to_csv(f"./UUU_autog.csv", index=False)
+    df.to_csv(f"./result/UUU_autog.csv", index=False)
 
 
 if __name__ == "__main__":
