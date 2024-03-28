@@ -1,5 +1,6 @@
 # UBB_autog means DGP is UBB and estimation is done via our estimation methods
 
+import os
 import sys
 sys.path.append('..')
 from autog import *
@@ -51,8 +52,8 @@ def main():
     ''' save results '''
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()
     df['True Effect'] = causal_effect_true
-    df.to_csv(f"./result/UBB_ours.csv", index=False)
-
+    current_file_name = os.path.basename(__file__).split('.')[0]
+    df.to_csv(f"./result/{current_file_name}.csv", index=False)
 
 if __name__ == "__main__":
     main()

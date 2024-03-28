@@ -1,5 +1,6 @@
 # UUB_autog means DGP is UUB and estimation is done via autog
 
+import os
 import sys
 sys.path.append('..')
 from autog import *
@@ -10,17 +11,17 @@ L_EDGE_TYPE = 'U'
 A_EDGE_TYPE = 'U'
 Y_EDGE_TYPE = 'B'
 
-TRUE_CAUSAL_EFFECT_N_UNIT = 20000
+TRUE_CAUSAL_EFFECT_N_UNIT = 3000
 AVG_DEGREE = 5
-N_UNITS_LIST = [10000, 15000, 20000]
+N_UNITS_LIST = [2000, 3000]
 N_ESTIMATES = 15 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 50 # the number of L samples to draw 
-BURN_IN = 150 #200
+BURN_IN = 200 #200
 
 # true parameters of the Data Generating Process
 L_TRUE = np.array([-0.3, 0.4])
 A_TRUE = np.array([0.3, -0.4, -0.7, -0.2])
-Y_TRUE = np.array([1, 1, 0.5, 0.1, 1, -0.3, 1, 5])
+Y_TRUE = np.array([1, 3, 0.5, 0.1, 1, -0.3, 1, 3])
 
 
 def est_w_autog_parallel_helper(n_units):
@@ -33,6 +34,7 @@ def est_w_autog_parallel_helper(n_units):
 
     # compute causal effects using estimated parameters
     Y_A1_est = estimate_causal_effects_U_U(network_adj_mat, 1, L_est, Y_est, burn_in=BURN_IN)
+    print("half way")
     Y_A0_est = estimate_causal_effects_U_U(network_adj_mat, 0, L_est, Y_est, burn_in=BURN_IN)
     return Y_A1_est - Y_A0_est
   
@@ -55,8 +57,8 @@ def main():
     ''' save results '''
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()
     df['True Effect'] = causal_effect_true
-    df.to_csv(f"./result/UUB_autog.csv", index=False)
-
+    current_file_name = os.path.basename(__file__).split('.')[0]
+    df.to_csv(f"./result/new_{current_file_name}.csv", index=False)
 
 if __name__ == "__main__":
     main()
