@@ -10,17 +10,17 @@ L_EDGE_TYPE = 'U'
 A_EDGE_TYPE = 'U'
 Y_EDGE_TYPE = 'B'
 
-TRUE_CAUSAL_EFFECT_N_UNIT = 3000
-AVG_DEGREE = 5
-N_UNITS_LIST = [500, 1000, 2000]
-N_ESTIMATES = 10 # number of causal effect estimates for each n_unit
+TRUE_CAUSAL_EFFECT_N_UNIT = 10000
+AVG_DEGREE = 6
+N_UNITS_LIST = [1000, 2000, 5000, 8000]
+N_ESTIMATES = 15 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 100 # the number of L samples to draw 
 BURN_IN = 200
 
 # true parameters of the Data Generating Process
 L_TRUE = np.array([-0.3, 0.4])
 A_TRUE = np.array([0.3, -0.4, -0.7, -0.2])
-Y_TRUE = np.array([0, 1, 0.5, 0.1, 1, -0.3, 1, 5])
+Y_TRUE = np.array([1, 1, 0.5, 0.1, 1, -0.3, 1, 5])
 
 
 def est_w_autog_parallel_helper(n_units):
