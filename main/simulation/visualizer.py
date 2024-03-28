@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('./result/UUB_autog.csv')
+df = pd.read_csv('./result/new_UUB_autog.csv')
 n_samples = [int(column_name.split()[2]) for column_name in df.columns if 'n units' in column_name]
 
 plt.figure(figsize=(10, 6))

@@ -17,9 +17,10 @@ AVG_DEGREE = 5
 N_UNITS_LIST = [500, 1000, 2000, 3000]
 N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 100 # the number of L samples to draw 
+BURN_IN = 200
 
 # true parameters of the Data Generating Process
-L_TRUE = np.array([0, 1, -0.3, 0.4])
+L_TRUE = np.array([1.6, 0.3, 2])
 A_TRUE = np.array([0, 1, 0.3, -0.4, -0.7, 0.2])
 Y_TRUE = np.array([0, 1, 0.5, 0.1, 1, -0.3, 0.6, 0.4])
 
@@ -27,11 +28,10 @@ Y_TRUE = np.array([0, 1, 0.5, 0.1, 1, -0.3, 0.6, 0.4])
 def parallel_helper(n_units):
     network_dict, network_adj_mat = create_random_network(n_units, AVG_DEGREE)
     
-    # give burn_in a dummy value 0 because it's all bidirected edges so we
-    # don't have burn-in period.
+    # note: the parameter burn_in will not be used since all layers have 
+    #       bidirected edges.
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, 
-                         L_TRUE, A_TRUE, Y_TRUE, burn_in=0, 
-                         L_biedge_const_var=True)
+                         L_TRUE, A_TRUE, Y_TRUE, BURN_IN, L_biedge_const_var=True)
 
     return estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
                                        N_SIMULATIONS)
