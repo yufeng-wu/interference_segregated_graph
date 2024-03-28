@@ -1,4 +1,4 @@
-# UBB_autog means DGP is UBB and estimation is done via our estimation methods
+# BBU_autog means DGP is BBU and estimation is done via our estimation methods
 
 import sys
 sys.path.append('..')
@@ -7,9 +7,9 @@ from our_estimation_methods import *
 
 
 ''' set up '''
-L_EDGE_TYPE = 'U'
+L_EDGE_TYPE = 'B'
 A_EDGE_TYPE = 'B'
-Y_EDGE_TYPE = 'B'
+Y_EDGE_TYPE = 'U'
 
 TRUE_CAUSAL_EFFECT_N_UNIT = 5000
 AVG_DEGREE = 5
@@ -19,7 +19,7 @@ N_SIMULATIONS = 100 # the number of L samples to draw
 BURN_IN = 200
 
 # true parameters of the Data Generating Process
-L_TRUE = np.array([1.6, 0.3, 2])
+L_TRUE = np.array([-0.3, 0.4])
 A_TRUE = np.array([0, 1, 0.3, -0.4, -0.7, 0.2])
 Y_TRUE = np.array([0, 0.2, 0.5, 0.1, 1, -0.3, 1, 0.5])
 
