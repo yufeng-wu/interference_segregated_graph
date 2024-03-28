@@ -27,14 +27,38 @@ def ring_adjacency_matrix(num_units):
 
     return network
 
-def biedge_sample_L(network, params):
+def biedge_sample_L(network_adj_mat, params, const_var=False):
+    '''
+    Sample a realization of the L layer given the network adjacency matrix.
     
-    U = np.random.normal(loc=params[0], scale=params[1], size=network.shape)
-    U = np.triu(U) + np.triu(U, 1).T # make U symmetric by copying the upper triangular to the lower triangular part
-    U = np.where(network == 1, U, network) # apply the network mask
+    Inputs:
+        - network_adj_mat: a numpy array representing the network adjacency matrix
+        - params: a list of parameters for the L layer. If constant_variance is True, 
+                  then params is a list of length 3: [true_mean, true_var, true_cov]. 
+                  Otherwise, params is a list of length 4: [mean, var, beta_0, beta_1]
+        - const_var: a boolean indicating whether the variance of the L_i 
+                     is constant.
+    '''
+    
+    if const_var:
+        cov, var, mean = params # unpack params
+        n_sample = len(network_adj_mat)
+        
+        cov_mat = np.full(network_adj_mat.shape, cov)
+        cov_mat = np.where(network_adj_mat > 0, cov_mat, 0)
+        np.fill_diagonal(cov_mat, var)
+        
+        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=1)
+    
+    else:
+        mean, std, beta_0, beta_1 = params # unpack params
+        
+        U = np.random.normal(loc=mean, scale=std, size=network_adj_mat.shape)
+        U = np.triu(U) + np.triu(U, 1).T # make U symmetric by copying the upper triangular to the lower triangular part
+        U = np.where(network_adj_mat == 1, U, network_adj_mat) # apply the network mask
 
-    pL = expit(params[2] + params[3]*U.sum(axis=0)) # pL is a vector 
-    L = np.random.binomial(1, pL)
+        pL = expit(beta_0 + beta_1*U.sum(axis=0)) # pL is a vector 
+        L = np.random.binomial(1, pL)
 
     return L
 

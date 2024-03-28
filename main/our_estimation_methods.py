@@ -7,7 +7,7 @@ import numpy as np
 from scipy.optimize import minimize
 from sklearn.linear_model import LogisticRegression
 
-def causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in=200, 
+def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in=200, 
                        n_simulations=100):
     ''' L layer is Undirected (---), Y layer is Bidirected (<->) '''
     L_samples = gibbs_sample_L(network_adj_mat, params_L, burn_in, n_draws=n_simulations, select_every=3)
