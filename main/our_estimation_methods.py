@@ -1,4 +1,6 @@
 import random
+
+from sklearn.ensemble import RandomForestClassifier
 from maximal_independent_set import maximal_n_apart_independent_set
 from autog import *
 
@@ -238,6 +240,6 @@ def build_EYi_model(network_dict, L, A, Y):
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1) 
     
-    model = LogisticRegression()
+    model = LogisticRegression() #RandomForestClassifier(n_estimators=50) # LogisticRegression()
     model.fit(features, target)
     return model
