@@ -182,9 +182,10 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
     '''
 
     # 1) estimate the parameters to resample L layer
-    params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), 
-                        args=(L, network_adj_mat)).x
-
+    # params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), 
+    #                     args=(L, network_adj_mat)).x
+    params_L = np.array([-0.3, 0.4]) # give it true params_L
+    print("params L:", params_L)
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
     model = build_EYi_model(network_dict, L, A, Y)
 
@@ -209,6 +210,7 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
         l_j_sums = {i: np.sum([L_draw[nb] for nb in network_dict[i]]) 
                     for i in network_dict}
         
+        # order of the features: a_i  l_i  l_j_sum  a_j_sum
         feature_vals_1 = np.array([
             [1, L_draw[i], l_j_sums[i], 1 * len(network_dict[i])]
             for i in network_dict
@@ -233,9 +235,9 @@ def build_EYi_model(network_dict, L, A, Y):
     ind_set_1_hop = maximal_n_apart_independent_set(network_dict, n=1)
     df = assemble_estimation_df(network_dict, ind_set_1_hop, L, A, Y)
 
-    features = df.drop(['i', 'y_i'], axis=1) 
     target = df['y_i']
-
-    model = LogisticRegression(max_iter=1000)
+    features = df.drop(['i', 'y_i'], axis=1) 
+    
+    model = LogisticRegression()
     model.fit(features, target)
     return model
