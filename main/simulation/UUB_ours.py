@@ -16,7 +16,7 @@ TRUE_CAUSAL_EFFECT_N_UNIT = 5000 #10000
 AVG_DEGREE = 5
 N_UNITS_LIST = [1000]#[1000, 3000, 5000, 7000, 9000]
 N_ESTIMATES = 20 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 1000 # the number of L samples to draw 
+N_SIMULATIONS = 3000 # the number of L samples to draw 
 BURN_IN = 200
 
 # true parameters of the Data Generating Process
@@ -30,7 +30,7 @@ def parallel_helper(n_units):
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
 
     return estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
-                                       N_SIMULATIONS, gibbs_select_every=5, 
+                                       N_SIMULATIONS, gibbs_select_every=3, 
                                        burn_in=BURN_IN)
 
         
