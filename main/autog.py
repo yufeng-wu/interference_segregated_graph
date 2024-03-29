@@ -121,17 +121,17 @@ def gibbs_sample_A(network, L, params, burn_in=200):
 
     return A
 
-def gibbs_sample_Y(network, L, A, params, burn_in=200):
+def gibbs_sample_Y(network_adj_mat, L, A, params, burn_in=200):
 
-    Y = np.random.binomial(1, 0.5, len(network))
+    Y = np.random.binomial(1, 0.5, len(network_adj_mat))
 
     # keep sampling an Y vector till burn in is done
     for m in range(burn_in):
-        for i in range(len(network)):
+        for i in range(len(network_adj_mat)):
             pYi_given_rest = expit(params[0] + params[1]*L[i] + params[2]*A[i] +
-                                   params[3]*np.dot(L, network[i, :]) +
-                                   params[4]*np.dot(A, network[i, :]) +
-                                   params[5]*np.dot(Y, network[i, :]))
+                                   params[3]*np.dot(L, network_adj_mat[i, :]) +
+                                   params[4]*np.dot(A, network_adj_mat[i, :]) +
+                                   params[5]*np.dot(Y, network_adj_mat[i, :]))
             Y[i] = np.random.binomial(1, pYi_given_rest)
 
     return Y
@@ -306,12 +306,12 @@ def estimate_causal_effects_B_B(network, A_value, params_L, params_Y, K=100):
 #     return estimate_with_wrapper(args_dict)
 
 def sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, 
-                true_L, true_A, true_Y, burn_in):
+                true_L, true_A, true_Y, burn_in, L_biedge_const_var=False):
     if L_edge_type == "U":
         L = gibbs_sample_L(network_adj_mat, params=true_L, burn_in=burn_in, 
                         n_draws=1, select_every=1)[0]
     elif L_edge_type == "B":
-        L = biedge_sample_L(network_adj_mat, params=true_L)
+        L = biedge_sample_L(network_adj_mat, params=true_L, const_var=L_biedge_const_var)
 
     if A_edge_type == "U":
         A = gibbs_sample_A(network_adj_mat, L, params=true_A, burn_in=burn_in)
