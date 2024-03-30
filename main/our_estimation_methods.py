@@ -248,7 +248,7 @@ def build_EYi_model(network_dict, L, A, Y):
 
     # The hyperparameter search space
     param_dict = {
-        'n_estimators': [50, 100],
+        'n_estimators': [100],
         'max_depth': [10, None],
         'min_samples_split': [2, 5],
         'min_samples_leaf': [1, 5]
