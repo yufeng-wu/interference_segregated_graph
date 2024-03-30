@@ -281,7 +281,7 @@ def build_EYi_model(network_dict, L, A, Y):
 
     # # Retrain the model with the best hyperparameters
     # model = RandomForestClassifier(**best_params)
-    model = LogisticRegression()
+    model = LogisticRegression(C=0.001)
     model.fit(features, target)
 
     # Evaluate the model

@@ -20,6 +20,3 @@ plt.xlabel('Number of units')
 plt.ylabel('Causal Effect')
 plt.title('Causal Effect Estimates for UUB Data')
 plt.show()
-
-
-
