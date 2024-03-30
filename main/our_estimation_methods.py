@@ -9,6 +9,7 @@ import numpy as np
 
 from scipy.optimize import minimize
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
                             n_simulations=100):
@@ -240,6 +241,13 @@ def build_EYi_model(network_dict, L, A, Y):
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1) 
     
-    model = LogisticRegression(C=float('inf')) # smaller C means more regularization #RandomForestClassifier(n_estimators=50) # LogisticRegression()
+    model = LogisticRegression() # smaller C means more regularization #RandomForestClassifier(n_estimators=50) # LogisticRegression()
     model.fit(features, target)
+    
+    # evaluate model
+    predicted = model.predict(features)
+    accuracy = accuracy_score(target, predicted)
+
+    print("naive:", max(np.mean(target), 1-np.mean(target)), "Model Accuracy:", accuracy)
+
     return model
