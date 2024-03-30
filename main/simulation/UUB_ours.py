@@ -16,11 +16,11 @@ L_EDGE_TYPE = 'U'
 A_EDGE_TYPE = 'U'
 Y_EDGE_TYPE = 'B'
 
-TRUE_CAUSAL_EFFECT_N_UNIT = 5000 #10000
+TRUE_CAUSAL_EFFECT_N_UNIT = 500 #10000
 AVG_DEGREE = 5
 N_UNITS_LIST = [500]#[1000, 3000, 5000, 7000, 9000]
 N_ESTIMATES = 1000 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 100 # the number of L samples to draw 
+N_SIMULATIONS = 500 # the number of L samples to draw 
 BURN_IN = 200
 
 # true parameters of the Data Generating Process
@@ -41,9 +41,9 @@ def parallel_helper(n_units):
 def main():
     
     ''' evaluate true network causal effects '''
-    # _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE)
-    # causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, N_SIMULATIONS)
-    causal_effect_true = 0.437
+    _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE)
+    causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, N_SIMULATIONS)
+    # causal_effect_true = 0.437
     print("True causal effect:", causal_effect_true)
     
     ''' using autog to estimate causal effects from data generated from UUB '''
