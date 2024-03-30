@@ -245,10 +245,10 @@ def build_EYi_model(network_dict, L, A, Y):
 
     # the hyperparameter search space
     param_dict = {
-        'n_estimators': randint(50, 200),
-        'max_depth': randint(2, 20) + [None],
-        'min_samples_split': randint(2, 11) + [None],
-        'min_samples_leaf': randint(1, 11) + [None]
+        'n_estimators': list(range(50, 200)),
+        'max_depth': list(range(2, 20)) + [None],
+        'min_samples_split': list(range(2, 11)) + [None],
+        'min_samples_leaf': list(range(1, 11)) + [None]
     }
 
     model = RandomForestClassifier()
