@@ -241,7 +241,7 @@ def build_EYi_model(network_dict, L, A, Y):
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1) 
     
-    model = RandomForestClassifier(n_estimators=100) # smaller C means more regularization #RandomForestClassifier(n_estimators=50) # LogisticRegression()
+    model = RandomForestClassifier(n_estimators=100, max_depth=5)
     model.fit(features, target)
     
     # evaluate model
