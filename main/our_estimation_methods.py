@@ -10,8 +10,8 @@ import numpy as np
 from scipy.optimize import minimize
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import RandomizedSearchCV
-from scipy.stats import randint
+from sklearn.model_selection import train_test_split
+from itertools import product
 
 def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
                             n_simulations=100):
@@ -243,21 +243,43 @@ def build_EYi_model(network_dict, L, A, Y):
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1) 
 
-    # the hyperparameter search space
+    # Split the data into training and validation sets
+    features_train, features_val, target_train, target_val = train_test_split(features, target, test_size=0.2, random_state=42)
+
+    # The hyperparameter search space
     param_dict = {
-        'n_estimators': list(range(50, 200, 10)),
-        'max_depth': list(range(2, 20, 2)) + [None],
-        'min_samples_split': list(range(2, 11, 2)),
-        'min_samples_leaf': list(range(1, 11, 2))
+        'n_estimators': [50, 100],
+        'max_depth': [10, None],
+        'min_samples_split': [2, 5],
+        'min_samples_leaf': [1, 5]
     }
 
-    model = RandomForestClassifier()
-    random_search = RandomizedSearchCV(model, param_dict, n_iter=10, cv=5, 
-                                       n_jobs=-1, scoring='accuracy')
-    random_search.fit(features, target)
-    best_params = random_search.best_params_
+    best_score = 0
+    best_params = None
 
-    # retrain the model with the best hyperparameters
+    # Iterate over all combinations of hyperparameters
+    # Generate all combinations of hyperparameters
+    param_combinations = product(param_dict['n_estimators'], 
+                                 param_dict['max_depth'], 
+                                 param_dict['min_samples_split'], 
+                                 param_dict['min_samples_leaf'])
+
+    for params in param_combinations:
+        print(params)
+        model = RandomForestClassifier(n_estimators=params[0], 
+                                       max_depth=params[1], 
+                                       min_samples_split=params[2], 
+                                       min_samples_leaf=params[3])
+        model.fit(features_train, target_train)
+        score = model.score(features_val, target_val)
+        if score > best_score:
+            best_score = score
+            best_params = {'n_estimators': params[0], 
+                           'max_depth': params[1], 
+                           'min_samples_split': params[2], 
+                           'min_samples_leaf': params[3]}
+
+    # Retrain the model with the best hyperparameters
     model = RandomForestClassifier(**best_params)
     model.fit(features, target)
 
