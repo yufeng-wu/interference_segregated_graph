@@ -57,7 +57,7 @@ def main():
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()
     df['True Effect'] = causal_effect_true
     current_file_name = os.path.basename(__file__).split('.')[0]
-    df.to_csv(f"./result/{current_file_name}.csv", index=False)
+    df.to_csv(f"./result/regular_{current_file_name}.csv", index=False)
 
 if __name__ == "__main__":
     main()
