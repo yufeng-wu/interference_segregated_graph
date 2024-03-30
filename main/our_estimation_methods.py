@@ -247,12 +247,12 @@ def build_EYi_model(network_dict, L, A, Y):
     param_dict = {
         'n_estimators': list(range(50, 200)),
         'max_depth': list(range(2, 20)) + [None],
-        'min_samples_split': list(range(2, 11)) + [None],
-        'min_samples_leaf': list(range(1, 11)) + [None]
+        'min_samples_split': list(range(2, 11)),
+        'min_samples_leaf': list(range(1, 11))
     }
 
     model = RandomForestClassifier()
-    random_search = RandomizedSearchCV(model, param_dict, n_iter=20, cv=5, 
+    random_search = RandomizedSearchCV(model, param_dict, n_iter=3, cv=5, 
                                        n_jobs=-1, scoring='accuracy')
     random_search.fit(features, target)
     best_params = random_search.best_params_
