@@ -19,8 +19,8 @@ Y_EDGE_TYPE = 'B'
 TRUE_CAUSAL_EFFECT_N_UNIT = 500 #10000
 AVG_DEGREE = 5
 N_UNITS_LIST = [500]#[1000, 3000, 5000, 7000, 9000]
-N_ESTIMATES = 5000 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 500 # the number of L samples to draw 
+N_ESTIMATES = 1000 # number of causal effect estimates for each n_unit
+N_SIMULATIONS = 1000 # the number of L samples to draw 
 BURN_IN = 200
 
 # true parameters of the Data Generating Process
