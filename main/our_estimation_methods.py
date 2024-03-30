@@ -9,7 +9,9 @@ import numpy as np
 
 from scipy.optimize import minimize
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import randint
 
 def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
                             n_simulations=100):
@@ -240,14 +242,28 @@ def build_EYi_model(network_dict, L, A, Y):
 
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1) 
-    
-    model = RandomForestClassifier(n_estimators=100, max_depth=5)
+
+    # the hyperparameter search space
+    param_dict = {
+        'n_estimators': randint(50, 200),
+        'max_depth': randint(2, 20) + [None],
+        'min_samples_split': randint(2, 11) + [None],
+        'min_samples_leaf': randint(1, 11) + [None]
+    }
+
+    model = RandomForestClassifier()
+    random_search = RandomizedSearchCV(model, param_dict, n_iter=20, cv=5, 
+                                       n_jobs=-1, scoring='accuracy')
+    random_search.fit(features, target)
+    best_params = random_search.best_params_
+
+    # retrain the model with the best hyperparameters
+    model = RandomForestClassifier(**best_params)
     model.fit(features, target)
-    
-    # evaluate model
+
+    # Evaluate the model
     predicted = model.predict(features)
     accuracy = accuracy_score(target, predicted)
-
-    print("naive:", max(np.mean(target), 1-np.mean(target)), "Model Accuracy:", accuracy)
+    print("Naive:", max(np.mean(target), 1 - np.mean(target)), "Model Accuracy:", accuracy)
 
     return model

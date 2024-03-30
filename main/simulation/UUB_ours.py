@@ -19,7 +19,7 @@ Y_EDGE_TYPE = 'B'
 TRUE_CAUSAL_EFFECT_N_UNIT = 5000 #10000
 AVG_DEGREE = 5
 N_UNITS_LIST = [1000, 2000, 3000]#[1000, 3000, 5000, 7000, 9000]
-N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
+N_ESTIMATES = 25 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 800 # the number of L samples to draw 
 BURN_IN = 200
 
@@ -57,7 +57,7 @@ def main():
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()
     df['True Effect'] = causal_effect_true
     current_file_name = os.path.basename(__file__).split('.')[0]
-    df.to_csv(f"./result/regular_{current_file_name}.csv", index=False)
+    df.to_csv(f"./result/{current_file_name}.csv", index=False)
 
 if __name__ == "__main__":
     main()
