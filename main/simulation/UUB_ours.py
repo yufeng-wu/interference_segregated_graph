@@ -16,10 +16,10 @@ L_EDGE_TYPE = 'U'
 A_EDGE_TYPE = 'U'
 Y_EDGE_TYPE = 'B'
 
-TRUE_CAUSAL_EFFECT_N_UNIT = 500 #10000
+TRUE_CAUSAL_EFFECT_N_UNIT = 2000 #10000
 AVG_DEGREE = 5
-N_UNITS_LIST = [500]#[1000, 3000, 5000, 7000, 9000]
-N_ESTIMATES = 1000 # number of causal effect estimates for each n_unit
+N_UNITS_LIST = [500, 1000, 1500, 2000]#[1000, 3000, 5000, 7000, 9000]
+N_ESTIMATES = 300 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 1000 # the number of L samples to draw 
 BURN_IN = 200
 
@@ -34,7 +34,7 @@ def parallel_helper(n_units):
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
 
     return estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
-                                       N_SIMULATIONS, gibbs_select_every=3, 
+                                       N_SIMULATIONS, gibbs_select_every=4, 
                                        burn_in=BURN_IN)
 
         
