@@ -190,7 +190,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
     # params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), 
     #                     args=(L, network_adj_mat)).x
     params_L = np.array([-0.3, 0.4]) # give it true params_L
-    print("params L:", params_L)
+    
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
     model = build_EYi_model(network_dict, L, A, Y)
 
@@ -205,7 +205,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
     # each inner list is the estimated individual-level constrast between
     # pred_Y_i_given_intervention_1 - pred_Y_i_given_intervention_0
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws)
-    
+    print("CE: ", np.mean(contrasts))
     return np.mean(contrasts)
 
 def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
@@ -281,7 +281,7 @@ def build_EYi_model(network_dict, L, A, Y):
 
     # # Retrain the model with the best hyperparameters
     # model = RandomForestClassifier(**best_params)
-    model = LogisticRegression()
+    model = LogisticRegression(penalty=None)
     model.fit(features, target)
 
     # Evaluate the model
