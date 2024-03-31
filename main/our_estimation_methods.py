@@ -284,7 +284,7 @@ def build_EYi_model(network_dict, L, A, Y):
     
     # Define the hyperparameters for tuning
     param_dict = {
-        'C': [0.001, 0.1, 1, 100],
+        'C': [0.001, 0.1, 1, 100]
     }
 
     best_score = 0
@@ -297,7 +297,7 @@ def build_EYi_model(network_dict, L, A, Y):
     param_combinations = product(param_dict['C'])
 
     for params in param_combinations:
-        model = LogisticRegression(C=params[0], solver=params[1], penalty='l2')
+        model = LogisticRegression(C=params[0], penalty='l2')
         model.fit(features_train, target_train)
         score = model.score(features_val, target_val)
         if score > best_score:
