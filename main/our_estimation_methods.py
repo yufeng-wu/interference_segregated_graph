@@ -283,29 +283,29 @@ def build_EYi_model(network_dict, L, A, Y):
     # model = RandomForestClassifier(**best_params)
     
     # Define the hyperparameters for tuning
-    param_dict = {
-        'C': [0.001, 0.1, 1, 100]
-    }
+    # param_dict = {
+    #     'C': [0.001, 0.1, 1, 100]
+    # }
 
-    best_score = 0
-    best_params = None
+    # best_score = 0
+    # best_params = None
 
-    # Split the data into training and validation sets
-    features_train, features_val, target_train, target_val = train_test_split(features, target, test_size=0.4)
+    # # Split the data into training and validation sets
+    # features_train, features_val, target_train, target_val = train_test_split(features, target, test_size=0.4)
 
-    # Iterate over all combinations of hyperparameters
-    param_combinations = product(param_dict['C'])
+    # # Iterate over all combinations of hyperparameters
+    # param_combinations = product(param_dict['C'])
 
-    for params in param_combinations:
-        model = LogisticRegression(C=params[0])
-        model.fit(features_train, target_train)
-        score = model.score(features_val, target_val)
-        if score > best_score:
-            best_score = score
-            best_params = {'C': params[0]}
+    # for params in param_combinations:
+    #     model = LogisticRegression(C=params[0])
+    #     model.fit(features_train, target_train)
+    #     score = model.score(features_val, target_val)
+    #     if score > best_score:
+    #         best_score = score
+    #         best_params = {'C': params[0]}
 
     # Retrain the model with the best hyperparameters
-    model = LogisticRegression(**best_params)
+    model = RandomForestClassifier()
 
     model.fit(features, target)
 
