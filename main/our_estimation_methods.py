@@ -187,10 +187,9 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
     '''
 
     # 1) estimate the parameters to resample L layer
-    # params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), 
-    #                     args=(L, network_adj_mat)).x
-    params_L = np.array([-0.3, 0.4]) # give it true params_L
-    
+    params_L = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), 
+                        args=(L, network_adj_mat)).x
+   
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
     model = build_EYi_model(network_dict, L, A, Y)
 
