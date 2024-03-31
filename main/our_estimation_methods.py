@@ -284,7 +284,7 @@ def build_EYi_model(network_dict, L, A, Y):
     
     # Define the hyperparameters for tuning
     param_dict = {
-        'C': [0.001, 0.1, 1, 100]
+        'C': [1, 100]#[0.001, 0.1, 1, 100]
     }
 
     best_score = 0
