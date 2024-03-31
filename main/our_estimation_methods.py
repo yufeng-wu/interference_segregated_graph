@@ -281,7 +281,7 @@ def build_EYi_model(network_dict, L, A, Y):
 
     # # Retrain the model with the best hyperparameters
     # model = RandomForestClassifier(**best_params)
-    model = RandomForestClassifier(max_depth=10)
+    model = RandomForestClassifier(max_depth=5)
     model.fit(features, target)
 
     # Evaluate the model
