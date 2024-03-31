@@ -6,23 +6,27 @@ sys.path.append('..')
 from autog import *
 from our_estimation_methods import *
 
+# for cleaner output
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 
 ''' set up '''
 L_EDGE_TYPE = 'U'
 A_EDGE_TYPE = 'B'
 Y_EDGE_TYPE = 'B'
 
-TRUE_CAUSAL_EFFECT_N_UNIT = 5000
+TRUE_CAUSAL_EFFECT_N_UNIT = 2000 #10000
 AVG_DEGREE = 5
-N_UNITS_LIST = [500, 1000, 2000, 3000]
-N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 100 # the number of L samples to draw 
+N_UNITS_LIST = [500] #[1000, 3000, 5000, 7000, 9000]#[1000, 3000, 5000, 7000, 9000]
+N_ESTIMATES = 200 # number of causal effect estimates for each n_unit
+N_SIMULATIONS = 1000 # the number of L samples to draw 
 BURN_IN = 200
 
 # true parameters of the Data Generating Process
 L_TRUE = np.array([-0.3, 0.4])
 A_TRUE = np.array([0, 1, 0.3, -0.4, -0.7, 0.2])
-Y_TRUE = np.array([0, 0.2, 0.5, 0.1, 1, -0.3, 1, 0.5])
+Y_TRUE = np.array([0, 1, -3, 0.1, 1, -0.3, 1, 2])
 
 
 def parallel_helper(n_units):
@@ -46,7 +50,7 @@ def main():
     causal_effect_ests = {}
     with ProcessPoolExecutor() as executor:
         for n_units in N_UNITS_LIST:
-            results = executor.map(est_w_autog_parallel_helper, [n_units]*N_ESTIMATES)
+            results = executor.map(parallel_helper, [n_units]*N_ESTIMATES)
             causal_effect_ests[f'n units {n_units}'] = list(results)
     
     ''' save results '''
