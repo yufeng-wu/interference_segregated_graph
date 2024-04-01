@@ -132,7 +132,7 @@ def estimate_biedge_L_params(network_dict, L, A, Y):
     est_var = np.var(data["L_i"]) # close-form MLE estimate
     est_cov_mat = ricf(L1, L2, max_iter=30, var=est_var)
     est_cov = est_cov_mat[0][1] # get the covariance between Li and Lj
-
+    print("ESTIMATE BIEDGE L PARMS est_cov, est_var, est_mean:", est_cov, est_var, est_mean)
     return est_cov, est_var, est_mean
 
 def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in=200, 
