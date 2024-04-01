@@ -27,7 +27,7 @@ def ring_adjacency_matrix(num_units):
 
     return network
 
-def biedge_sample_L(network_adj_mat, params, const_var=False):
+def biedge_sample_L(network_adj_mat, params, n_draws=1):
     '''
     Sample a realization of the L layer given the network adjacency matrix.
     
@@ -36,29 +36,36 @@ def biedge_sample_L(network_adj_mat, params, const_var=False):
         - params: a list of parameters for the L layer. If constant_variance is True, 
                   then params is a list of length 3: [true_mean, true_var, true_cov]. 
                   Otherwise, params is a list of length 4: [mean, var, beta_0, beta_1]
-        - const_var: a boolean indicating whether the variance of the L_i 
-                     is constant.
     '''
     
-    if const_var:
-        cov, var, mean = params # unpack params
-        n_sample = len(network_adj_mat)
+    # def sample_multivariate_normal(mean_vector, cov_mat):
+    #     '''
+    #     This function generates a sample from a multivariate normal distribution.
         
-        cov_mat = np.full(network_adj_mat.shape, cov)
-        cov_mat = np.where(network_adj_mat > 0, cov_mat, 0)
-        np.fill_diagonal(cov_mat, var)
-        
-        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=1)[0]
+    #     Inputs:
+    #         - mean_vector: a numpy array representing the mean vector of the multivariate normal distribution
+    #         - cov_mat: a numpy array representing the covariance matrix of the multivariate normal distribution
+    #     '''
+    #     return mean_vector + np.linalg.cholesky(cov_mat) @ np.random.standard_normal(mean_vector.size)
     
-    else:
-        mean, std, beta_0, beta_1 = params # unpack params
+    cov, var, mean = params # unpack params
+    n_sample = len(network_adj_mat)
+    
+    cov_mat = np.full(network_adj_mat.shape, cov)
+    cov_mat = np.where(network_adj_mat > 0, cov_mat, 0)
+    np.fill_diagonal(cov_mat, var)
+    print("start sampling L")
+    L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
+    print("finished sampling L")
+    # else:
+    #     mean, std, beta_0, beta_1 = params # unpack params
         
-        U = np.random.normal(loc=mean, scale=std, size=network_adj_mat.shape)
-        U = np.triu(U) + np.triu(U, 1).T # make U symmetric by copying the upper triangular to the lower triangular part
-        U = np.where(network_adj_mat == 1, U, network_adj_mat) # apply the network mask
+    #     U = np.random.normal(loc=mean, scale=std, size=network_adj_mat.shape)
+    #     U = np.triu(U) + np.triu(U, 1).T # make U symmetric by copying the upper triangular to the lower triangular part
+    #     U = np.where(network_adj_mat == 1, U, network_adj_mat) # apply the network mask
 
-        pL = expit(beta_0 + beta_1*U.sum(axis=0)) # pL is a vector 
-        L = np.random.binomial(1, pL)
+    #     pL = expit(beta_0 + beta_1*U.sum(axis=0)) # pL is a vector 
+    #     L = np.random.binomial(1, pL)
 
     return L
 
@@ -77,7 +84,7 @@ def biedge_sample_Y(network, L, A, params):
 
     U = np.random.normal(loc=params[0], scale=params[1], size=network.shape)
     U = np.triu(U) + np.triu(U, 1).T  # make U symmetric
-    U = np.where(network == 1, U, network)  # apply network mask
+    U = np.where(network == 1, U, 0)  # apply network mask
 
     pY = expit(params[2] + params[3]*L + params[4]*A + params[5]*(L@network) + 
                params[6]*(A@network) + params[7]*U.sum(axis=0))
@@ -86,13 +93,38 @@ def biedge_sample_Y(network, L, A, params):
 
     return Y
 
+def biedge_sample_Ys(network_adj_mat, Ls, As, params):
+    # Ls and As are now 2D arrays where each row is a different L or A vector
+    # dimension of Ls, As: n_simulations x n_units
+    
+    # dimension of Us is n_simulationss x n_units x n_units
+    Us = np.random.normal(loc=params[0], 
+                          scale=params[1], 
+                          size=(Ls.shape[0], # n_simulations
+                                network_adj_mat.shape[0], # n_units
+                                network_adj_mat.shape[1])) # n_units
+    Us = np.triu(Us) + np.triu(Us, 1).transpose((0, 2, 1))  # make U symmetric
+    Us = np.where(network_adj_mat == 1, Us, 0)  # apply network mask
+    
+    # dimension of pY is n_simulations x n_units
+    pY = expit(params[2] + 
+               params[3]*Ls + 
+               params[4]*As + 
+               params[5]*(Ls@network_adj_mat) + 
+               params[6]*(As@network_adj_mat) + 
+               params[7]*Us.sum(axis=-1)) # sum across the most inner axis of Us
+    
+    # dimension of Ys is n_simulations x n_units
+    Ys = np.random.binomial(1, pY)
+    return Ys
+
 def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every=1):
     # TODO: this can be changed to a more general version: the user specify 
     # how much to thin autocorrealtion, and this funciton can return a list 
     # of "indepdnet" gibbs sample Ls. The user will also specify how many samples
     # they want.
 
-    L_samples = []
+    Ls = []
     # initialize a vector of Ls
     L = np.random.binomial(1, 0.5, len(network_adj_mat))
 
@@ -103,9 +135,9 @@ def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every
             L[i] = np.random.binomial(1, pLi_given_rest)
 
         if gibbs_iter >= burn_in and gibbs_iter % select_every == 0:
-            L_samples.append(L.copy())
+            Ls.append(L.copy())
     
-    return L_samples
+    return Ls
 
 def gibbs_sample_A(network, L, params, burn_in=200):
 
@@ -134,6 +166,30 @@ def gibbs_sample_Y(network_adj_mat, L, A, params, burn_in=200):
             Y[i] = np.random.binomial(1, pYi_given_rest)
 
     return Y
+
+def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
+    # Ls and As are now 2D arrays where each row is a different L or A vector
+    # dimension of Ls, As: n_simulations x n_units
+    
+    # initialize Ys as a 2D array with the same shape as Ls and As
+    Ys = np.random.binomial(1, 0.5, Ls.shape)
+
+    # keep sampling an Y vector till burn in is done
+    for m in range(burn_in):
+        print(m)
+        for i in range(len(network_adj_mat)):
+            
+            # pYi_given_rest is a list of probabilities of length n_simulations
+            pYi_given_rest = expit(params[0] + 
+                                   params[1]*Ls[:, i] + 
+                                   params[2]*As[:, i] +
+                                   params[3]*np.dot(Ls, network_adj_mat[i, :]) +
+                                   params[4]*np.dot(As, network_adj_mat[i, :]) +
+                                   params[5]*np.dot(Ys, network_adj_mat[i, :]))
+
+            Ys[:, i] = np.random.binomial(1, pYi_given_rest)
+
+    return Ys
 
 def npll_L(params, L, network_adj_mat):
 
@@ -182,17 +238,17 @@ def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y,
 
     return np.mean(matrix_Ys)
 
-def estimate_causal_effects_B_B(network, A_value, params_L, params_Y, K=100):
-    matrix_Ys = []
+# def estimate_causal_effects_B_B(network, A_value, params_L, params_Y, K=100):
+#     matrix_Ys = []
 
-    for _ in range(K):
-        L = biedge_sample_L(network, params_L)
-        A = np.array([A_value] * len(L))
-        Y = biedge_sample_Y(network, L, A, params_Y)
+#     for _ in range(K):
+#         L = biedge_sample_L(network, params_L)
+#         A = np.array([A_value] * len(L))
+#         Y = biedge_sample_Y(network, L, A, params_Y)
 
-        matrix_Ys.append(Y.copy())
+#         matrix_Ys.append(Y.copy())
     
-    return np.mean(matrix_Ys)
+#     return np.mean(matrix_Ys)
 
 
 # def bootstrap_causal_effects_U_B(n_units_list, n_bootstraps, true_L, true_A, 
@@ -305,12 +361,12 @@ def estimate_causal_effects_B_B(network, A_value, params_L, params_Y, K=100):
 #     return estimate_with_wrapper(args_dict)
 
 def sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, 
-                true_L, true_A, true_Y, burn_in, L_biedge_const_var=False):
+                true_L, true_A, true_Y, burn_in):
     if L_edge_type == "U":
         L = gibbs_sample_L(network_adj_mat, params=true_L, burn_in=burn_in, 
                         n_draws=1, select_every=1)[0]
     elif L_edge_type == "B":
-        L = biedge_sample_L(network_adj_mat, params=true_L, const_var=L_biedge_const_var)
+        L = biedge_sample_L(network_adj_mat, params=true_L, n_draws=1)[0]
 
     if A_edge_type == "U":
         A = gibbs_sample_A(network_adj_mat, L, params=true_A, burn_in=burn_in)

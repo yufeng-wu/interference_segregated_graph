@@ -10,35 +10,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
-def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
-                            n_simulations=100):
-    L_samples = [biedge_sample_L(network_adj_mat, params_L, const_var=True) for 
-                 _ in range(n_simulations)]
-    
-    A1 = np.array([1] * len(network_adj_mat))
-    A0 = np.array([0] * len(network_adj_mat))
-    
-    contrasts = [biedge_sample_Y(network_adj_mat, L, A1, params_Y) - 
-                 biedge_sample_Y(network_adj_mat, L, A0, params_Y)
-                 for L in L_samples]
-    
-    return np.mean(contrasts)
-
-def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
-                                n_simulations=100):
-    # 1) get iid realizations of p(L)
-    L_est = estimate_biedge_L_params(network_dict, L, A, Y)
-    L_draws = [biedge_sample_L(network_adj_mat, L_est, const_var=True) for 
-                 _ in range(n_simulations)]
-    
-    # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
-    model = build_EYi_model(network_dict, L, A, Y)
-    
-    # 3) estimate network causal effects using empirical estimate of p(L)
-    #    and model
-    contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws)
-    return np.mean(contrasts)
-
 def ricf(L1, L2, max_iter, var):
 
     def least_squares_loss(params, L, Z, var_index):
@@ -137,46 +108,65 @@ def estimate_biedge_L_params(network_dict, L, A, Y):
 
 def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in=200, 
                             n_simulations=100):
-    contrasts = []
+    Ls = biedge_sample_L(network_adj_mat, params_L, n_draws=n_simulations)
+
+    As_1 = np.ones(Ls.shape)
+    As_0 = np.zeros(Ls.shape)
     
-    for _ in range(n_simulations):
-        L = biedge_sample_L(network_adj_mat, params_L, const_var=True)
-        
-        A1 = np.array([1] * len(network_adj_mat))
-        A0 = np.array([0] * len(network_adj_mat))
-        
-        Y_A1 = gibbs_sample_Y(network_adj_mat, L, A1, params_Y, burn_in=burn_in)
-        Y_A0 = gibbs_sample_Y(network_adj_mat, L, A0, params_Y, burn_in=burn_in)
-        
-        contrasts.append(np.mean(Y_A1 - Y_A0))
+    print("start gibbs sample Ys")
+    Ys_A1 = gibbs_sample_Ys(network_adj_mat, Ls, As_1, params_Y, burn_in=burn_in)
+    Ys_A0 = gibbs_sample_Ys(network_adj_mat, Ls, As_0, params_Y, burn_in=burn_in)
+    print("end gibbs sample Ys")
+    return np.mean(Ys_A1 - Ys_A0)
+
+def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
+                            n_simulations=100):
+    ''' vectorized '''
+    # dimension of Ls is n_simulations x n_units
+    Ls = biedge_sample_L(network_adj_mat, params_L, n_draws=n_simulations)
     
+    As_1 = np.ones(Ls.shape)
+    As_0 = np.zeros(Ls.shape)
+
+    # dimension of Ys_A1 and Ys_A0 are both n_simulations x n_units
+    Ys_A1 = biedge_sample_Ys(network_adj_mat, Ls, As_1, params_Y)
+    Ys_A0 = biedge_sample_Ys(network_adj_mat, Ls, As_0, params_Y)
+    
+    return np.mean(Ys_A1 - Ys_A0)
+
+def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
+                                n_simulations=100):
+    # 1) get iid realizations of p(L)
+    L_est = estimate_biedge_L_params(network_dict, L, A, Y)
+    Ls = biedge_sample_L(network_adj_mat, L_est, n_draws=n_simulations)
+    
+    # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
+    model = build_EYi_model(network_dict, L, A, Y)
+    
+    # 3) estimate network causal effects using empirical estimate of p(L)
+    #    and model
+    contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
     return np.mean(contrasts)
-    
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in=200, 
-                       n_simulations=100):
-    ''' L layer is Undirected (---), Y layer is Bidirected (<->) '''
-    L_samples = gibbs_sample_L(network_adj_mat, params_L, burn_in, n_draws=n_simulations, select_every=3)
+                       n_simulations=100, gibbs_select_every=3):
+    # dimension of Ls is n_simulations x n_units
+    Ls = gibbs_sample_L(network_adj_mat, params_L, burn_in, 
+                        n_draws=n_simulations, select_every=gibbs_select_every)
     
-    n_unit = len(network_adj_mat)
-    A1 = np.array([1] * n_unit)
-    A0 = np.array([0] * n_unit)
+    As_1 = np.ones(Ls.shape)
+    As_0 = np.zeros(Ls.shape)
     
-    contrasts = [biedge_sample_Y(network_adj_mat, L, A1, params_Y) - 
-                 biedge_sample_Y(network_adj_mat, L, A0, params_Y)
-                 for L in L_samples]
+    # dimension of Ys_A1 and Ys_A0 are both n_simulations x n_units
+    Ys_A1 = biedge_sample_Ys(network_adj_mat, Ls, As_1, params_Y)
+    Ys_A0 = biedge_sample_Ys(network_adj_mat, Ls, As_0, params_Y)
     
-    return np.mean(contrasts)
+    return np.mean(Ys_A1 - Ys_A0)
 
 def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
                                n_draws_from_pL, gibbs_select_every, burn_in):
     ''' 
-    L layer is Undirected (---), Y layer is Bidirected (<->) 
-    
     Inputs:
-        - network_dict
-        - network_adj_mat
-        
         - gibbs_select_every: select every gibbs_select_every-th element of 
         the Gibbs samples to reduce auto-correlation.
     '''
@@ -191,15 +181,14 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
     # 3) use params_L and model to estimate causal effects:
     #   - first, get independent realizations of p(L) using Gibbs sampling
     #     and thin auto-correlation 
-    L_draws = gibbs_sample_L(network_adj_mat=network_adj_mat, params=params_L, 
-                             burn_in=burn_in, n_draws=n_draws_from_pL,
-                             select_every=gibbs_select_every)
+    Ls = gibbs_sample_L(network_adj_mat=network_adj_mat, params=params_L, 
+                        burn_in=burn_in, n_draws=n_draws_from_pL,
+                        select_every=gibbs_select_every)
 
     # a list of lists
     # each inner list is the estimated individual-level constrast between
     # pred_Y_i_given_intervention_1 - pred_Y_i_given_intervention_0
-    contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws)
-    print("CE: ", np.mean(contrasts))
+    contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
     return np.mean(contrasts)
 
 def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):

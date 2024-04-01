@@ -14,7 +14,7 @@ def parallel_helper(n_units):
     
     # note: the parameter burn_in won't be used since all layers are bidirected.
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, 
-                         L_TRUE, A_TRUE, Y_TRUE, BURN_IN, L_biedge_const_var=True)
+                         L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
 
     return estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
                                        N_SIMULATIONS)
@@ -22,6 +22,9 @@ def parallel_helper(n_units):
 def main():
     
     ''' evaluate true network causal effects '''
+    TRUE_CAUSAL_EFFECT_N_UNIT = 5
+    N_SIMULATIONS = 3
+    AVG_DEGREE = 1
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE)
     causal_effect_true = true_causal_effects_B_B(network_adj_mat, L_TRUE, Y_TRUE,
                                                  N_SIMULATIONS)
