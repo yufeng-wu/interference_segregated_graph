@@ -1,28 +1,14 @@
 # BBU_autog means DGP is BBU and estimation is done via our estimation methods
-
 import sys
 sys.path.append('..')
-from autog import *
-from our_estimation_methods import *
 import os
+from setup import *
 
-
-''' set up '''
 L_EDGE_TYPE = 'B'
 A_EDGE_TYPE = 'B'
 Y_EDGE_TYPE = 'U'
 
-TRUE_CAUSAL_EFFECT_N_UNIT = 5000
-AVG_DEGREE = 5
-N_UNITS_LIST = [500, 1000, 2000, 3000]
-N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 100 # the number of L samples to draw 
-BURN_IN = 200
-
-# true parameters of the Data Generating Process
-L_TRUE = np.array([1.6, 0.3, 2])
-A_TRUE = np.array([0, 1, 0.3, -0.4, -0.7, 0.2])
-Y_TRUE = np.array([0.2, 1, 1.5, -0.3, 1, -0.4])
+L_TRUE, A_TRUE, Y_TRUE = GET_TRUE_PARAMS(L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE)
 
 def parallel_helper(n_units):
     network_dict, network_adj_mat = create_random_network(n_units, AVG_DEGREE)
@@ -35,9 +21,7 @@ def parallel_helper(n_units):
     
     return causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, N_SIMULATIONS)
   
-        
 def main():
-    
     ''' evaluate true network causal effects '''
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
                                                AVG_DEGREE)
@@ -57,7 +41,6 @@ def main():
     df['True Effect'] = causal_effect_true
     current_file_name = os.path.basename(__file__).split('.')[0]
     df.to_csv(f"./result/{current_file_name}.csv", index=False)
-
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,10 @@
-# UUU_autog means DGP is UUU and estimation is done via autog
 import os
 import sys
 sys.path.append('..')
 from setup import *
 
 L_EDGE_TYPE = 'U'
-A_EDGE_TYPE = 'U'
+A_EDGE_TYPE = 'B'
 Y_EDGE_TYPE = 'U'
 
 L_TRUE, A_TRUE, Y_TRUE = GET_TRUE_PARAMS(L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE)
@@ -20,7 +19,7 @@ def main():
     
     print("True causal effect:", causal_effect_true)
     
-    ''' using autog to estimate causal effects from data generated from UUU '''
+    ''' using autog to estimate causal effects from data generated from UBU '''
     causal_effect_ests = {}
     with ProcessPoolExecutor() as executor:
         for n_units in N_UNITS_LIST:

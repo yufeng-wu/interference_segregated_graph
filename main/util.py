@@ -20,8 +20,12 @@ def kth_order_neighborhood(network, node, k):
 
     return neighbors
 
-def create_random_network(n, avg_degree):
+def create_random_network(n, avg_degree, max_degree=10):
     g = nx.fast_gnp_random_graph(n, avg_degree / (n - 1))
+    for node in g.nodes:
+        while g.degree[node] > max_degree:
+            neighbors = list(g.neighbors(node))
+            g.remove_edge(node, random.choice(neighbors))
     adj_matrix = nx.adjacency_matrix(g).toarray()
     return nx.to_dict_of_lists(g), adj_matrix
 

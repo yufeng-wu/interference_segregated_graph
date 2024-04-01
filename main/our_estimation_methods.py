@@ -1,26 +1,22 @@
-import random
-
-from sklearn.ensemble import RandomForestClassifier
 from maximal_independent_set import maximal_n_apart_independent_set
 from autog import *
 
 import pandas as pd
 import numpy as np
+import random
 
 from scipy.optimize import minimize
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-from itertools import product
 
 def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
                             n_simulations=100):
     L_samples = [biedge_sample_L(network_adj_mat, params_L, const_var=True) for 
                  _ in range(n_simulations)]
     
-    n_unit = len(network_adj_mat)
-    A1 = np.array([1] * n_unit)
-    A0 = np.array([0] * n_unit)
+    A1 = np.array([1] * len(network_adj_mat))
+    A0 = np.array([0] * len(network_adj_mat))
     
     contrasts = [biedge_sample_Y(network_adj_mat, L, A1, params_Y) - 
                  biedge_sample_Y(network_adj_mat, L, A0, params_Y)
@@ -91,7 +87,7 @@ def ricf(L1, L2, max_iter, var):
     return cov_mat
 
 def estimate_biedge_L_params(network_dict, L, A, Y):
-    
+
     def build_dataset(ind_set, L):
         df = pd.DataFrame(L.T, columns=["L_i"])
         return df.loc[list(ind_set)]
@@ -142,13 +138,12 @@ def estimate_biedge_L_params(network_dict, L, A, Y):
 def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in=200, 
                             n_simulations=100):
     contrasts = []
-    n_unit = len(network_adj_mat)
     
-    for i in range(n_simulations):
+    for _ in range(n_simulations):
         L = biedge_sample_L(network_adj_mat, params_L, const_var=True)
         
-        A1 = np.array([1] * n_unit)
-        A0 = np.array([0] * n_unit)
+        A1 = np.array([1] * len(network_adj_mat))
+        A0 = np.array([0] * len(network_adj_mat))
         
         Y_A1 = gibbs_sample_Y(network_adj_mat, L, A1, params_Y, burn_in=burn_in)
         Y_A0 = gibbs_sample_Y(network_adj_mat, L, A0, params_Y, burn_in=burn_in)

@@ -48,7 +48,7 @@ def biedge_sample_L(network_adj_mat, params, const_var=False):
         cov_mat = np.where(network_adj_mat > 0, cov_mat, 0)
         np.fill_diagonal(cov_mat, var)
         
-        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=1)
+        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=1)[0]
     
     else:
         mean, std, beta_0, beta_1 = params # unpack params
@@ -122,7 +122,6 @@ def gibbs_sample_A(network, L, params, burn_in=200):
     return A
 
 def gibbs_sample_Y(network_adj_mat, L, A, params, burn_in=200):
-
     Y = np.random.binomial(1, 0.5, len(network_adj_mat))
 
     # keep sampling an Y vector till burn in is done
