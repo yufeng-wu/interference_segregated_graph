@@ -2,7 +2,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-df = pd.read_csv('./result/BBU_ours.csv')
+filename = "UBB_autog"
+dirname = "0402"
+
+df = pd.read_csv(f'./result/{dirname}/{filename}.csv')
 n_samples = [int(column_name.split()[2]) for column_name in df.columns if 'n units' in column_name]
 
 plt.figure(figsize=(10, 6))
@@ -17,5 +20,7 @@ plt.axhline(y=df['True Effect'][0], color='r', linestyle='--')
 
 plt.xlabel('Number of units')
 plt.ylabel('Causal Effect')
-plt.title('Causal Effect Estimates')
-plt.show()
+plt.title(f'Causal Effect Estimates {filename}')
+# plt.show()
+
+plt.savefig(f'./result/{dirname}/figures/{filename}.png')

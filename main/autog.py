@@ -196,7 +196,11 @@ def npll_L(params, L, network_adj_mat):
     # pL = np.where(pL == 0, 1e-10, pL) # replace 0 with a small const to ensure numerical stability
     
     # bootstrap pL here
-    
+    '''
+    /home/cs-students/24sw20/thesis/main/simulation/../autog.py:200: 
+    RuntimeWarning: divide by zero encountered in log
+    return -np.sum(np.log(pL))
+    '''
     return -np.sum(np.log(pL))
 
 def npll_L_continuous(params, L, network_adj_mat):
@@ -210,6 +214,7 @@ def npll_Y(params, L, A, Y, network):
     pY1 = expit((params[0] + params[1]*L + params[2]*A + params[3]*(L@network) + 
                  params[4]*(A@network) + params[5]*(Y@network)))
     pY = Y*pY1 + (1-Y)*(1-pY1)
+    # # TODO: check why that's happening
     pY = np.where(pY == 0, 1e-10, pY)
     return -np.sum(np.log(pY))
 
