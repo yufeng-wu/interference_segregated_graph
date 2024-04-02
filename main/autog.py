@@ -119,7 +119,7 @@ def biedge_sample_Ys(network_adj_mat, Ls, As, params):
 def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every=1):
     # TODO: this can be changed to a more general version: the user specify 
     # how much to thin autocorrealtion, and this funciton can return a list 
-    # of "indepdnet" gibbs sample Ls. The user will also specify how many samples
+    # of "independent" gibbs sample Ls. The user will also specify how many samples
     # they want.
 
     Ls = []
@@ -135,6 +135,7 @@ def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every
         if gibbs_iter >= burn_in and gibbs_iter % select_every == 0:
             Ls.append(L.copy())
     
+    Ls = np.array(Ls)
     return Ls
 
 def gibbs_sample_A(network, L, params, burn_in=200):
