@@ -168,7 +168,7 @@ def sample_L_A_Y(n_samples, network, edge_types):
 def U_dist_1():
     return np.random.normal(0, 1)
 
-def f_1(pa_values):
+def f_1(pa_values):t
     weighted_sum = 0
     weights = {
         'U_values': 5,

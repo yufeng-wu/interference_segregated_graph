@@ -7,7 +7,7 @@ from our_estimation_methods import *
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # the common set up of my tests
-TRUE_CAUSAL_EFFECT_N_UNIT = 1000 
+TRUE_CAUSAL_EFFECT_N_UNIT = 2000 
 AVG_DEGREE = 5
 N_UNITS_LIST = [300, 600, 900, 1200, 1500]
 N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
@@ -23,17 +23,34 @@ def GET_TRUE_PARAMS(L_edge_type,  A_edge_type, Y_edge_type):
     Y_TRUE = np.array([0.2, 1, 1.5, -0.3, 1, -0.4]) if Y_edge_type == 'U' else np.array([0, 1, -3, 0.1, 1, -0.3, 1, 2])
     return L_TRUE, A_TRUE, Y_TRUE
 
-def est_w_autog_parallel_helper(n_units, L_edge_type, A_edge_type, Y_edge_type,
-                                L_true, A_true, Y_true):
+def est_w_autog_parallel_helper(params):
+    # unpack parameters
+    n_units, L_edge_type, A_edge_type, Y_edge_type, L_true, A_true, Y_true = params
+    
     _, network_adj_mat = create_random_network(n_units, AVG_DEGREE)
     L, A, Y = sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, 
-                         L_true, A_true, Y_true, BURN_IN, L_biedge_const_var=True)
+                         L_true, A_true, Y_true, BURN_IN)
     
     # estimate parameters for the L and Y layers using the autog method
-    L_est = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), args=(L, network_adj_mat)).x
+    if L_edge_type == 'B':
+        # in our set up, when L_edge_type is bidirected, the data is continuous
+        # L_est has 3 parameters in this case
+        # the 3rd position of params is the variance of normal distribution, 
+        # which should be non-negative.
+        L_est = minimize(npll_L_continuous, x0=np.random.uniform(-1, 1, 3),
+                 args=(L, network_adj_mat), 
+                 bounds=[(-np.inf, np.inf), (-np.inf, np.inf), (1e-10, np.inf)]).x
+    else:
+        # otherwise, L variables are binary
+        # L_est has 2 parameters in this case
+        L_est = minimize(npll_L, x0=np.random.uniform(-1, 1, 2), args=(L, network_adj_mat)).x
     Y_est = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), args=(L, A, Y, network_adj_mat)).x
 
     # compute causal effects using estimated parameters
-    Y_A1_est = estimate_causal_effects_U_U(network_adj_mat, 1, L_est, Y_est, burn_in=BURN_IN)
-    Y_A0_est = estimate_causal_effects_U_U(network_adj_mat, 0, L_est, Y_est, burn_in=BURN_IN)
+    Y_A1_est = estimate_causal_effects_U_U(network_adj_mat, 1, L_est, Y_est, 
+                                           burn_in=BURN_IN, 
+                                           L_continuous_data=(L_edge_type == 'B'))
+    Y_A0_est = estimate_causal_effects_U_U(network_adj_mat, 0, L_est, Y_est, 
+                                           burn_in=BURN_IN, 
+                                           L_continuous_data=(L_edge_type == 'B'))
     return Y_A1_est - Y_A0_est

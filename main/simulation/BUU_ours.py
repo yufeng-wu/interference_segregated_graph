@@ -12,7 +12,7 @@ L_TRUE, A_TRUE, Y_TRUE = GET_TRUE_PARAMS(L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE)
 def parallel_helper(n_units):
     network_dict, network_adj_mat = create_random_network(n_units, AVG_DEGREE)
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, 
-                         L_TRUE, A_TRUE, Y_TRUE, BURN_IN, L_biedge_const_var=True)
+                         L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
 
     L_est = estimate_biedge_L_params(network_dict, L, A, Y)
     Y_est = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), 

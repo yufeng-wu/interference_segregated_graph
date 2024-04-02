@@ -190,40 +190,58 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
     return Ys
 
 def npll_L(params, L, network_adj_mat):
-
     pL1 = expit(params[0] + params[1]*(L@network_adj_mat)) # a length n vector.
     pL = L*pL1 + (1-L)*(1-pL1)
-    # TODO: check why that's happening
-    pL = np.where(pL == 0, 1e-10, pL) # replace 0 with a small const to ensure numerical stability
+    # # TODO: check why that's happening
+    # pL = np.where(pL == 0, 1e-10, pL) # replace 0 with a small const to ensure numerical stability
     
     # bootstrap pL here
     
     return -np.sum(np.log(pL))
 
+def npll_L_continuous(params, L, network_adj_mat):
+    mu = params[0] + params[1] * (L@network_adj_mat)
+    sigma = params[2]
+    # negative pseudo log-likelihood of normal distribution
+    return np.sum(0.5 * (np.log(2 * np.pi) + np.log(sigma**2) + (L - mu)**2 / sigma**2))
+
 def npll_Y(params, L, A, Y, network):
 
-    pY1 = expit((params[0] + params[1]*L + params[2]*A + params[3]*(L@network) + params[4]*(A@network) + params[5]*(Y@network)))
+    pY1 = expit((params[0] + params[1]*L + params[2]*A + params[3]*(L@network) + 
+                 params[4]*(A@network) + params[5]*(Y@network)))
     pY = Y*pY1 + (1-Y)*(1-pY1)
     pY = np.where(pY == 0, 1e-10, pY)
     return -np.sum(np.log(pY))
 
 def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y, 
-                                burn_in=200, K=100, N=3):
+                                burn_in=200, K=100, N=3, L_continuous_data=False):
     '''
     K: number of rows in matrix_Ys
     N: thin the Markov Chain for every N iteration
     '''
     # initialize random values
     Y = np.random.binomial(1, 0.5, len(network_adj_mat))
-    L = np.random.binomial(1, 0.5, len(network_adj_mat))
+    
+    if L_continuous_data:
+        L = np.random.normal(size=len(network_adj_mat))
+    else:
+        L = np.random.binomial(1, 0.5, len(network_adj_mat))
 
     A = [A_value] * len(L)  # a list of A_value repeated len(L) times
     matrix_Ys = []
 
     for m in range(burn_in + K*N):
         for i in range(len(network_adj_mat)):
-            pLi_given_rest = expit(params_L[0] + params_L[1]*np.dot(L, network_adj_mat[i, :]))
-            L[i] = np.random.binomial(1, pLi_given_rest)
+            
+            if L_continuous_data:
+                # params_L is length three when L_continuous_data is True
+                mu = params_L[0] + params_L[1] * np.dot(L, network_adj_mat[i, :])
+                sigma = params_L[2]
+                L[i] = np.random.normal(mu, sigma)
+            else:
+                # params_L is length two when L_continuous_data is False
+                pLi_given_rest = expit(params_L[0] + params_L[1]*np.dot(L, network_adj_mat[i, :]))
+                L[i] = np.random.binomial(1, pLi_given_rest)
 
             pYi_given_rest = expit(params_Y[0] + params_Y[1]*L[i] + params_Y[2]*A[i] +
                                    params_Y[3]*np.dot(L, network_adj_mat[i, :]) +
