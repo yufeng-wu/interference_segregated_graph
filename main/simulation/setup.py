@@ -7,7 +7,7 @@ from our_estimation_methods import *
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # the common set up of my tests
-TRUE_CAUSAL_EFFECT_N_UNIT = 20 
+TRUE_CAUSAL_EFFECT_N_UNIT = 2000 
 AVG_DEGREE = 5
 N_UNITS_LIST = [300]
 N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
