@@ -146,7 +146,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     Ls = biedge_sample_L(network_adj_mat, L_est, n_draws=n_simulations)
     
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
-    model = build_EYi_model(network_dict, L, A, Y)
+    model = build_EYi_model(L, A, Y, network_adj_mat)
     
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
@@ -181,7 +181,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
                         args=(L, network_adj_mat)).x
    
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
-    model = build_EYi_model(network_dict, L, A, Y)
+    model = build_EYi_model(L, A, Y, network_adj_mat)
 
     # 3) use params_L and model to estimate causal effects:
     #   - first, get independent realizations of p(L) using Gibbs sampling
@@ -224,81 +224,51 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
         contrasts.append(pred_Y_intervene_A1 - pred_Y_intervene_A0)
     return contrasts
 
-def build_EYi_model(network_dict, L, A, Y):
-    ind_set_1_hop = maximal_n_apart_independent_set(network_dict, n=1)
-    df = assemble_estimation_df(network_dict, ind_set_1_hop, L, A, Y)
+class CustomLogisticRegression:
+    def __init__(self, L, A, Y, network_adj_mat):
+        self.L = L
+        self.A = A
+        self.Y = Y
+        self.network_adj_mat = network_adj_mat
+        self.params = self.train()
 
-    target = df['y_i']
-    features = df.drop(['i', 'y_i'], axis=1) 
+    def train(self):
+        # use the custom estimator to estimate the parameters for our 
+        # logistic regression model. params_logistic_reg is of size 5.
+        params_logistic_reg = minimize(self._npll_logistic_regression, 
+                                       x0=np.random.uniform(-1, 1, 5)).x
+        return params_logistic_reg
 
-    # Split the data into training and validation sets
-    # features_train, features_val, target_train, target_val = train_test_split(features, target, test_size=0.2, random_state=42)
+    def _npll_logistic_regression(self, params):
+        pY1 = expit((params[0] + params[1]*self.L + params[2]*self.A + 
+                     params[3]*(self.L@self.network_adj_mat) + 
+                     params[4]*(self.A@self.network_adj_mat)))
+        pY = self.Y*pY1 + (1-self.Y)*(1-pY1)
+        pY = np.where(pY == 0, 1e-10, pY)
+        return -np.sum(np.log(pY))
 
-    # # The hyperparameter search space
-    # param_dict = {
-    #     'n_estimators': [100],
-    #     'max_depth': [10, None],
-    #     'min_samples_split': [2, 5],
-    #     'min_samples_leaf': [1, 5]
-    # }
+    def predict_proba(self, X):
+        # X is a pd.DataFrame with certain columns with dimension n x 4
+        # p1 is a matrix of size n x 1
+        p1 = expit(self.params[0] + self.params[1]*X['l_i'] + 
+                   self.params[2]*X['a_i'] + 
+                   self.params[3]*X['l_j_sum'] + 
+                   self.params[4]*X['a_j_sum'])
+        # return in the same style as that of a sklearn model
+        return np.column_stack((1-p1, p1))
 
-    # best_score = 0
-    # best_params = None
+def build_EYi_model(L, A, Y, network_adj_mat):
+    return CustomLogisticRegression(L, A, Y, network_adj_mat)
 
-    # # Iterate over all combinations of hyperparameters
-    # # Generate all combinations of hyperparameters
-    # param_combinations = product(param_dict['n_estimators'], 
-    #                              param_dict['max_depth'], 
-    #                              param_dict['min_samples_split'], 
-    #                              param_dict['min_samples_leaf'])
+    # OLD IMPLEMENTATION USING ML
+    # ind_set_1_hop = maximal_n_apart_independent_set(network_dict, n=1)
+    # df = assemble_estimation_df(network_dict, ind_set_1_hop, L, A, Y)
 
-    # for params in param_combinations:
-    #     print(params)
-    #     model = RandomForestClassifier(n_estimators=params[0], 
-    #                                    max_depth=params[1], 
-    #                                    min_samples_split=params[2], 
-    #                                    min_samples_leaf=params[3])
-    #     model.fit(features_train, target_train)
-    #     score = model.score(features_val, target_val)
-    #     if score > best_score:
-    #         best_score = score
-    #         best_params = {'n_estimators': params[0], 
-    #                        'max_depth': params[1], 
-    #                        'min_samples_split': params[2], 
-    #                        'min_samples_leaf': params[3]}
+    # target = df['y_i']
+    # features = df.drop(['i', 'y_i'], axis=1) 
 
     # # Retrain the model with the best hyperparameters
-    # model = RandomForestClassifier(**best_params)
+    # model = RandomForestClassifier()
+    # model.fit(features, target)
     
-    # Define the hyperparameters for tuning
-    # param_dict = {
-    #     'C': [0.001, 0.1, 1, 100]
-    # }
-
-    # best_score = 0
-    # best_params = None
-
-    # # Split the data into training and validation sets
-    # features_train, features_val, target_train, target_val = train_test_split(features, target, test_size=0.4)
-
-    # # Iterate over all combinations of hyperparameters
-    # param_combinations = product(param_dict['C'])
-
-    # for params in param_combinations:
-    #     model = LogisticRegression(C=params[0])
-    #     model.fit(features_train, target_train)
-    #     score = model.score(features_val, target_val)
-    #     if score > best_score:
-    #         best_score = score
-    #         best_params = {'C': params[0]}
-
-    # Retrain the model with the best hyperparameters
-    model = RandomForestClassifier()
-
-    model.fit(features, target)
-
-    # Evaluate the model
-    predicted = model.predict(features)
-    accuracy = accuracy_score(target, predicted)
-    
-    return model
+    # return model

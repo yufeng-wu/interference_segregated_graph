@@ -209,12 +209,13 @@ def npll_L_continuous(params, L, network_adj_mat):
     # negative pseudo log-likelihood of normal distribution
     return np.sum(0.5 * (np.log(2 * np.pi) + np.log(sigma**2) + (L - mu)**2 / sigma**2))
 
-def npll_Y(params, L, A, Y, network):
+def npll_Y(params, L, A, Y, network_adj_mat):
 
-    pY1 = expit((params[0] + params[1]*L + params[2]*A + params[3]*(L@network) + 
-                 params[4]*(A@network) + params[5]*(Y@network)))
+    pY1 = expit((params[0] + params[1]*L + params[2]*A + 
+                 params[3]*(L@network_adj_mat) + 
+                 params[4]*(A@network_adj_mat) + 
+                 params[5]*(Y@network_adj_mat)))
     pY = Y*pY1 + (1-Y)*(1-pY1)
-    # # TODO: check why that's happening
     pY = np.where(pY == 0, 1e-10, pY)
     return -np.sum(np.log(pY))
 

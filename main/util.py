@@ -20,7 +20,7 @@ def kth_order_neighborhood(network, node, k):
 
     return neighbors
 
-def create_random_network(n, avg_degree, max_degree=2):
+def create_random_network(n, avg_degree, max_degree=10):
     g = nx.fast_gnp_random_graph(n, avg_degree / (n - 1))
     for node in g.nodes:
         while g.degree[node] > max_degree:
