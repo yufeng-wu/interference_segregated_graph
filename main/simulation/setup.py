@@ -7,11 +7,11 @@ from our_estimation_methods import *
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # the common set up of my tests
-TRUE_CAUSAL_EFFECT_N_UNIT = 2000 
+TRUE_CAUSAL_EFFECT_N_UNIT = 3000 
 AVG_DEGREE = 5
-N_UNITS_LIST = [500, 1000, 1500]
+N_UNITS_LIST = [500, 1000, 1500, 2000, 2500]
 N_ESTIMATES = 150 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 200 # the number of L samples to draw 
+N_SIMULATIONS = 300 # the number of L samples to draw 
 BURN_IN = 200
 GIBBS_SELECT_EVERY = 3
 # TRUE_CAUSAL_EFFECT_N_UNIT = 2000 
