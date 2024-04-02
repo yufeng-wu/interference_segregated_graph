@@ -192,15 +192,9 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
 def npll_L(params, L, network_adj_mat):
     pL1 = expit(params[0] + params[1]*(L@network_adj_mat)) # a length n vector.
     pL = L*pL1 + (1-L)*(1-pL1)
-    # # TODO: check why that's happening
-    # pL = np.where(pL == 0, 1e-10, pL) # replace 0 with a small const to ensure numerical stability
-    
-    # bootstrap pL here
-    '''
-    /home/cs-students/24sw20/thesis/main/simulation/../autog.py:200: 
-    RuntimeWarning: divide by zero encountered in log
-    return -np.sum(np.log(pL))
-    '''
+    # the expit() function outputs 0.0 when the input is reasonably small, so 
+    # we replace 0 with a small const to ensure numerical stability
+    pL = np.where(pL == 0, 1e-10, pL) 
     return -np.sum(np.log(pL))
 
 def npll_L_continuous(params, L, network_adj_mat):
@@ -210,12 +204,13 @@ def npll_L_continuous(params, L, network_adj_mat):
     return np.sum(0.5 * (np.log(2 * np.pi) + np.log(sigma**2) + (L - mu)**2 / sigma**2))
 
 def npll_Y(params, L, A, Y, network_adj_mat):
-
     pY1 = expit((params[0] + params[1]*L + params[2]*A + 
                  params[3]*(L@network_adj_mat) + 
                  params[4]*(A@network_adj_mat) + 
                  params[5]*(Y@network_adj_mat)))
     pY = Y*pY1 + (1-Y)*(1-pY1)
+    # the expit() function outputs 0.0 when the input is reasonably small, so 
+    # we replace 0 with a small const to ensure numerical stability
     pY = np.where(pY == 0, 1e-10, pY)
     return -np.sum(np.log(pY))
 

@@ -142,7 +142,8 @@ def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
 def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
                                 n_simulations=100):
     # 1) get iid realizations of p(L)
-    L_est = estimate_biedge_L_params(network_dict, L, A, Y)
+    # L_est = estimate_biedge_L_params(network_dict, L, A, Y)
+    L_est = [0.3, 3.5, 2] # give it true params for now.
     Ls = biedge_sample_L(network_adj_mat, L_est, n_draws=n_simulations)
     
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
@@ -244,6 +245,8 @@ class CustomLogisticRegression:
                      params[3]*(self.L@self.network_adj_mat) + 
                      params[4]*(self.A@self.network_adj_mat)))
         pY = self.Y*pY1 + (1-self.Y)*(1-pY1)
+        # the expit() function outputs 0.0 when the input is reasonably small, 
+        # so we replace 0 with a small const to ensure numerical stability
         pY = np.where(pY == 0, 1e-10, pY)
         return -np.sum(np.log(pY))
 
