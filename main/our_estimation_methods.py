@@ -10,7 +10,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
-def ricf(L1, L2, max_iter, var):
+def ricf(L1, L2, max_iter, var, max_degree_of_network):
+    '''
+    - max_degree_of_network: the largest degree of vertices in the network.
+        we need this information to ensure diagonal dominance throughout 
+        the optimization process, which is a sufficient condition for the 
+        positive definiteness of the estimated covariance matrix.
+    '''
 
     def least_squares_loss(params, L, Z, var_index):
         n, _ = L.shape
@@ -46,7 +52,8 @@ def ricf(L1, L2, max_iter, var):
 
             sol = minimize(least_squares_loss,
                             np.zeros(d),
-                            args=(L_df.values, Z, var_index))
+                            args=(L_df.values, Z, var_index),
+                            bounds=[(0, var/max_degree_of_network)]*d) # ensure positive definiteness
 
             # update covariance matrix according to the solution
             cov_mat[:, var_index] = sol.x
@@ -101,9 +108,9 @@ def estimate_biedge_L_params(network_dict, L, A, Y):
             L2.append(v1)
     
     est_var = np.var(data["L_i"]) # close-form MLE estimate
-    est_cov_mat = ricf(L1, L2, max_iter=30, var=est_var)
+    max_degree = max([len(v) for v in network_dict.values()])
+    est_cov_mat = ricf(L1, L2, max_iter=20, var=est_var, max_degree_of_network=max_degree)
     est_cov = est_cov_mat[0][1] # get the covariance between Li and Lj
-    print("ESTIMATE BIEDGE L PARMS est_cov, est_var, est_mean:", est_cov, est_var, est_mean)
     return est_cov, est_var, est_mean
 
 def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in=200, 
@@ -112,11 +119,9 @@ def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in=200,
 
     As_1 = np.ones(Ls.shape)
     As_0 = np.zeros(Ls.shape)
-    
-    print("start gibbs sample Ys")
+
     Ys_A1 = gibbs_sample_Ys(network_adj_mat, Ls, As_1, params_Y, burn_in=burn_in)
     Ys_A0 = gibbs_sample_Ys(network_adj_mat, Ls, As_0, params_Y, burn_in=burn_in)
-    print("end gibbs sample Ys")
     return np.mean(Ys_A1 - Ys_A0)
 
 def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
@@ -295,6 +300,5 @@ def build_EYi_model(network_dict, L, A, Y):
     # Evaluate the model
     predicted = model.predict(features)
     accuracy = accuracy_score(target, predicted)
-    print("Naive:", max(np.mean(target), 1 - np.mean(target)), "Model Accuracy:", accuracy)
-
+    
     return model

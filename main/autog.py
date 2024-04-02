@@ -54,9 +54,7 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     cov_mat = np.full(network_adj_mat.shape, cov)
     cov_mat = np.where(network_adj_mat > 0, cov_mat, 0)
     np.fill_diagonal(cov_mat, var)
-    print("start sampling L")
     L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
-    print("finished sampling L")
     # else:
     #     mean, std, beta_0, beta_1 = params # unpack params
         
@@ -176,7 +174,6 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
 
     # keep sampling an Y vector till burn in is done
     for m in range(burn_in):
-        print(m)
         for i in range(len(network_adj_mat)):
             
             # pYi_given_rest is a list of probabilities of length n_simulations

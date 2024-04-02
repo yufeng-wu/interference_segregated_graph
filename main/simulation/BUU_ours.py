@@ -33,6 +33,7 @@ def main():
     causal_effect_ests = {}
     with ProcessPoolExecutor() as executor:
         for n_units in N_UNITS_LIST:
+            print("[PROGRESS] n units", n_units)
             results = executor.map(parallel_helper, [n_units]*N_ESTIMATES)
             causal_effect_ests[f'n units {n_units}'] = list(results)
     

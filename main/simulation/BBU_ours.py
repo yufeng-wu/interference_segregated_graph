@@ -19,7 +19,8 @@ def parallel_helper(n_units):
     Y_est = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), 
                      args=(L, A, Y, network_adj_mat)).x
     
-    return causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, N_SIMULATIONS)
+    ce = causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, N_SIMULATIONS)
+    return ce
   
 def main():
     ''' evaluate true network causal effects '''
