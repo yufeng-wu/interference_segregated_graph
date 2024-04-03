@@ -66,8 +66,11 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
                     print(cov_mat)
                     print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
                     break
-    except ValueError as e:
-        print("ValueError occurred:", e)
+    except np.linalg.LinAlgError as e:
+        print("LinAlgError occurred:", e)
+        print("Cov mat", cov_mat)
+        print("network:", network_adj_mat)
+        print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
         L = []
     # try:
     #     L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
