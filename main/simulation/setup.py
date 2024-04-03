@@ -6,23 +6,13 @@ from our_estimation_methods import *
 # for cleaner output
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# autog test:
-TRUE_CAUSAL_EFFECT_N_UNIT = 10000 
-AVG_DEGREE = 5
-MAX_NEIGHBORS = 10
-N_UNITS_LIST = [5000, 10000]
-N_ESTIMATES = 50 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 100 # the number of L samples to draw 
-BURN_IN = 200
-GIBBS_SELECT_EVERY = 3
-
 # the common set up of my tests
-TRUE_CAUSAL_EFFECT_N_UNIT = 1000 
+TRUE_CAUSAL_EFFECT_N_UNIT = 2000 
 AVG_DEGREE = 1
 MAX_NEIGHBORS = 3
-N_UNITS_LIST = [500]
-N_ESTIMATES = 2000 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 300 # the number of L samples to draw 
+N_UNITS_LIST = [500, 1000]
+N_ESTIMATES = 1000 # number of causal effect estimates for each n_unit
+N_SIMULATIONS = 100 # the number of L samples to draw 
 BURN_IN = 200
 GIBBS_SELECT_EVERY = 3
 # TRUE_CAUSAL_EFFECT_N_UNIT = 2000 
