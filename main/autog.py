@@ -54,7 +54,7 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     cov_mat = np.full(network_adj_mat.shape, cov)
     cov_mat = np.where(network_adj_mat > 0, cov_mat, 0.0)
     np.fill_diagonal(cov_mat, var)
-    
+    print(cov_mat)
     try:
         L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
 
