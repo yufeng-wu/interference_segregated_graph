@@ -81,7 +81,10 @@ def biedge_sample_A(network, L, params):
     U = np.where(network == 1, U, network)  # apply network mask
 
     pA = expit(params[2] + params[3]*L + params[4]*(L@network) + params[5]*U.sum(axis=0))
-    A = np.random.binomial(1, pA)
+    try:
+        A = np.random.binomial(1, pA)
+    except ValueError:
+        print(pA)
 
     return A
 
