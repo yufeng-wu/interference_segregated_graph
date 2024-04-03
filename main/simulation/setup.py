@@ -9,8 +9,8 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # the common set up of my tests
 TRUE_CAUSAL_EFFECT_N_UNIT = 3000 
 AVG_DEGREE = 5
-N_UNITS_LIST = [500, 1000, 2000]
-N_ESTIMATES = 50 # number of causal effect estimates for each n_unit
+N_UNITS_LIST = [2000, 5000, 10000]
+N_ESTIMATES = 5 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 100 # the number of L samples to draw 
 BURN_IN = 200
 GIBBS_SELECT_EVERY = 3
