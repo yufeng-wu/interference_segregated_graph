@@ -16,15 +16,6 @@ N_SIMULATIONS = 100 # the number of L samples to draw
 BURN_IN = 200
 GIBBS_SELECT_EVERY = 3
 
-# the common set up of my tests
-TRUE_CAUSAL_EFFECT_N_UNIT = 1000 
-AVG_DEGREE = 1
-MAX_NEIGHBORS = 3
-N_UNITS_LIST = [500]
-N_ESTIMATES = 2000 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 300 # the number of L samples to draw 
-BURN_IN = 200
-GIBBS_SELECT_EVERY = 3
 # TRUE_CAUSAL_EFFECT_N_UNIT = 2000 
 # AVG_DEGREE = 5
 # N_UNITS_LIST = [300, 600, 900, 1200, 1500]

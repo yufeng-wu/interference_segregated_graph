@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 import os
-from setup import *
+from autog_temp_setup import *
 
 L_EDGE_TYPE = 'B'
 A_EDGE_TYPE = 'U'
