@@ -13,6 +13,7 @@ from scipy.special import expit
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+import warnings
 
 
 def ring_adjacency_matrix(num_units):
@@ -55,15 +56,27 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     cov_mat = np.where(network_adj_mat > 0, cov_mat, 0.0)
     np.fill_diagonal(cov_mat, var)
     
-
     try:
-        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
-    except RuntimeWarning as rw:
-        print("Warning occurred:", rw)
-        print("COV, VAR, MEAN:", cov, var, mean)
-        print(cov_mat)
-        print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
+        with warnings.catch_warnings(record=True) as w:
+            L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
+            for warning in w:
+                if "covariance is not symmetric positive-semidefinite." in str(warning.message):
+                    print("Warning occurred:", warning.message)
+                    print("COV, VAR, MEAN:", cov, var, mean)
+                    print(cov_mat)
+                    print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
+                    break
+    except ValueError as e:
+        print("ValueError occurred:", e)
         L = []
+    # try:
+    #     L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
+    # except RuntimeWarning as rw:
+    #     print("Warning occurred:", rw)
+    #     print("COV, VAR, MEAN:", cov, var, mean)
+    #     print(cov_mat)
+    #     print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
+    #     L = []
     
     # else:
     #     mean, std, beta_0, beta_1 = params # unpack params
