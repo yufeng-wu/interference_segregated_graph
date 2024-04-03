@@ -55,14 +55,13 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     cov_mat = np.where(network_adj_mat > 0, cov_mat, 0.0)
     np.fill_diagonal(cov_mat, var)
     
-    try:
-        print(cov_mat[0], sum(cov_mat[0]))
-        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
 
-    except np.linalg.LinAlgError:
+    try:
+        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
+    except RuntimeWarning as rw:
+        print("Warning occurred:", rw)
         print("COV, VAR, MEAN:", cov, var, mean)
         print(cov_mat)
-        # sum across rows to see the max degree
         print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
         L = []
     
