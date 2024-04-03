@@ -56,7 +56,7 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     np.fill_diagonal(cov_mat, var)
     
     try:
-        print(cov_mat[0])
+        print(cov_mat[0], sum(cov_mat[0]))
         L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
 
     except np.linalg.LinAlgError:
