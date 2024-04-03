@@ -143,7 +143,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
                                 n_simulations=100):
     # 1) get iid realizations of p(L)
     # L_est = estimate_biedge_L_params(network_dict, L, A, Y)
-    L_est = [1, 3.5, 0.7] # give it true params for now.
+    L_est = [1.0, 3.5, 0.7] # give it true params for now.
     Ls = biedge_sample_L(network_adj_mat, L_est, n_draws=n_simulations)
     
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
