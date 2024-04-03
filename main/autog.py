@@ -55,11 +55,13 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     cov_mat = np.where(network_adj_mat > 0, cov_mat, 0)
     np.fill_diagonal(cov_mat, var)
     
-    # check if cov_mat is positive definite:
-    print(np.all(np.linalg.eigvals(cov_mat) > 0))
+    try:
+        L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
+
+    except np.linalg.LinAlgError:
+        print("COV, VAR, MEAN:", cov, var, mean)
         
     
-    L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
     # else:
     #     mean, std, beta_0, beta_1 = params # unpack params
         
