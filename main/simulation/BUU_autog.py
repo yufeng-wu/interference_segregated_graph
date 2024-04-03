@@ -12,7 +12,7 @@ L_TRUE, A_TRUE, Y_TRUE = GET_TRUE_PARAMS(L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE)
 def main():
     ''' evaluate true network causal effects '''
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
-                                               AVG_DEGREE)
+                                               AVG_DEGREE, MAX_NEIGHBORS)
     causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, 
                                             BURN_IN, N_SIMULATIONS)
     print("True causal effect:", causal_effect_true)

@@ -8,8 +8,9 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # the common set up of my tests
 TRUE_CAUSAL_EFFECT_N_UNIT = 1000 
-AVG_DEGREE = 5
-N_UNITS_LIST = [1000]
+AVG_DEGREE = 1
+MAX_NEIGHBORS = 2
+N_UNITS_LIST = [500]
 N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 300 # the number of L samples to draw 
 BURN_IN = 200
@@ -39,7 +40,7 @@ def est_w_autog_parallel_helper(params):
     # unpack parameters
     n_units, L_edge_type, A_edge_type, Y_edge_type, L_true, A_true, Y_true = params
     
-    _, network_adj_mat = create_random_network(n_units, AVG_DEGREE)
+    _, network_adj_mat = create_random_network(n_units, AVG_DEGREE, MAX_NEIGHBORS)
     L, A, Y = sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, 
                          L_true, A_true, Y_true, BURN_IN)
     
