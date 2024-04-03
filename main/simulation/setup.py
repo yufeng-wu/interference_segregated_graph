@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # the common set up of my tests
 TRUE_CAUSAL_EFFECT_N_UNIT = 1000 
 AVG_DEGREE = 1
-MAX_NEIGHBORS = 2
+MAX_NEIGHBORS = 3
 N_UNITS_LIST = [500]
 N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 300 # the number of L samples to draw 
@@ -26,7 +26,7 @@ GIBBS_SELECT_EVERY = 3
 # true parameters of the Data Generating Process
 def GET_TRUE_PARAMS(L_edge_type,  A_edge_type, Y_edge_type):
     assert L_edge_type in ['U', 'B'] and A_edge_type in ['U', 'B'] and Y_edge_type in ['U', 'B']
-    L_TRUE = np.array([-0.3, 0.4]) if L_edge_type == 'U' else np.array([0.3, 3.5, 0.7]) 
+    L_TRUE = np.array([-0.3, 0.4]) if L_edge_type == 'U' else np.array([1, 3.5, 0.7]) 
     A_TRUE = np.array([5, 4, -2, -1.2]) if A_edge_type == 'U' else np.array([2, 1, 1.3, 6.4, 5.7, 0.2])
     Y_TRUE = np.array([2, 1, 1.5, -5.3, 1, -4]) if Y_edge_type == 'U' else np.array([0, 1, -3, 2.1, 7, -4.3, 1, 2])
     
