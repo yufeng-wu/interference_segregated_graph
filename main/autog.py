@@ -61,6 +61,8 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     except np.linalg.LinAlgError:
         print("COV, VAR, MEAN:", cov, var, mean)
         print(cov_mat)
+        # sum across rows to see the max degree
+        print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
         L = []
     
     # else:
