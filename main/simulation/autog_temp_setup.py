@@ -8,8 +8,8 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # autog test:
 TRUE_CAUSAL_EFFECT_N_UNIT = 10000 
-AVG_DEGREE = 1
-MAX_NEIGHBORS = 3
+AVG_DEGREE = 5
+MAX_NEIGHBORS = 10
 N_UNITS_LIST = [5000, 10000]
 N_ESTIMATES = 50 # number of causal effect estimates for each n_unit
 N_SIMULATIONS = 100 # the number of L samples to draw 
