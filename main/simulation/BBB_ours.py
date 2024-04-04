@@ -17,7 +17,7 @@ def parallel_helper(n_units):
                          L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
     # print(np.mean(L), np.mean(A), np.mean(Y))
     return estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
-                                       N_SIMULATIONS)
+                                       MAX_NEIGHBORS, N_SIMULATIONS)
         
 def main():
     
