@@ -15,12 +15,11 @@ def parallel_helper(n_units):
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, 
                          L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
 
-    L_est = estimate_biedge_L_params(network_dict, L, A, Y)
+    L_est = estimate_biedge_L_params(network_dict, L, MAX_NEIGHBORS)
     Y_est = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), 
                      args=(L, A, Y, network_adj_mat)).x
     
-    ce = causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, N_SIMULATIONS)
-    return ce
+    return causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, N_SIMULATIONS)
   
 def main():
     ''' evaluate true network causal effects '''
