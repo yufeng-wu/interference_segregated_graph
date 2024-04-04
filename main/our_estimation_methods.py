@@ -20,9 +20,9 @@ def ricf(L1, L2, max_iter, var, max_degree_of_network):
 
     def least_squares_loss(params, L, Z, var_index):
         n, _ = L.shape
-        return 0.5 * n * np.linalg.norm(L[:, var_index] - np.dot(Z, params)) ** 2
-        # return 0.5 / n * np.linalg.norm(L[:, var_index] - np.dot(Z, params)) ** 2
-
+        loss = 0.5 / n * np.linalg.norm(L[:, var_index] - np.dot(Z, params)) ** 2
+        return loss
+        
     d = 2 # number of variables in the graphical model for RICF estimates
     eps_L1 = L1 - np.mean(L1)
     eps_L2 = L2 - np.mean(L2)
@@ -37,7 +37,6 @@ def ricf(L1, L2, max_iter, var, max_degree_of_network):
                         [0.0, var]])
 
     for _ in range(max_iter):
-
         for var_index in [0, 1]:
             omega = cov_mat + var_mat
             omega_minusi = np.delete(omega, var_index, axis=0)
@@ -50,14 +49,18 @@ def ricf(L1, L2, max_iter, var, max_degree_of_network):
             Z_minusi = epsilon_minusi @ omega_minusii_inv.T
             Z = np.insert(Z_minusi, var_index, 0, axis=1)
 
-            sol = minimize(least_squares_loss,
-                            np.zeros(d),
-                            args=(L_df.values, Z, var_index),
-                            bounds=[(0, var/max_degree_of_network)]*d) # ensure positive definiteness
-
+            # bounds are to ensure positive definiteness, and we also minus 
+            # a small constant in case the rounding goes the wrong way
+            bound = (0, var/max_degree_of_network - 1e-6)
+            sol = minimize(least_squares_loss, 
+                           x0=np.random.uniform(bound[0], bound[1], d),
+                           args=(L_df.values, Z, var_index),
+                           bounds=[bound]*d) 
+            
+            # TODO: is it normal that RICF is returning 0.0 for the covariance sometimes?
+            
             # update covariance matrix according to the solution
-            cov_mat[:, var_index] = sol.x
-            cov_mat[var_index, :] = sol.x
+            cov_mat[:, var_index] = cov_mat[var_index, :] = sol.x
 
             # this is a trivial update for graphs with only bidirected edges
             var_mat[var_index, var_index] = var 
@@ -106,10 +109,10 @@ def estimate_biedge_L_params(network_dict, L, A, Y):
         else:
             L1.append(v2)
             L2.append(v1)
-    
+
     est_var = np.var(data["L_i"]) # close-form MLE estimate
     max_degree = max([len(v) for v in network_dict.values()])
-    est_cov_mat = ricf(L1, L2, max_iter=20, var=est_var, max_degree_of_network=max_degree)
+    est_cov_mat = ricf(L1, L2, max_iter=30, var=est_var, max_degree_of_network=max_degree)
     est_cov = est_cov_mat[0][1] # get the covariance between Li and Lj
     return est_cov, est_var, est_mean
 
@@ -143,7 +146,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
                                 n_simulations=100):
     # 1) get iid realizations of p(L)
     L_est = estimate_biedge_L_params(network_dict, L, A, Y)
-    print("Error L est", L_est - np.array([0.3, 3.5, 0.7]))
+    print("L_est:", L_est)
     # L_est = [0.3, 3.5, 0.7] # give it true params for now.
     Ls = biedge_sample_L(network_adj_mat, L_est, n_draws=n_simulations)
     
