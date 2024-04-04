@@ -24,7 +24,7 @@ def parallel_helper(n_units):
 def main():
     ''' evaluate true network causal effects '''
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
-                                               AVG_DEGREE)
+                                               AVG_DEGREE, MAX_NEIGHBORS)
     causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, 
                                             BURN_IN, N_SIMULATIONS)
     print("True causal effect:", causal_effect_true)
