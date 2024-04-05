@@ -9,6 +9,7 @@ from scipy.optimize import minimize
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+from tqdm import tqdm
 
 def ricf(L1, L2, max_iter, var, max_degree_of_network):
     '''
@@ -202,29 +203,32 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
 def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
     contrasts = []
     
-    for L_draw in L_draws:
-        l_j_sums = {i: np.sum([L_draw[nb] for nb in network_dict[i]]) 
-                    for i in network_dict}
-        
-        # order of the features: a_i  l_i  l_j_sum  a_j_sum
-        feature_vals_1 = np.array([
-            [1, L_draw[i], l_j_sums[i], 1 * len(network_dict[i])]
-            for i in network_dict
-        ])
-        feature_vals_0 = np.array([
-            [0, L_draw[i], l_j_sums[i], 0 * len(network_dict[i])]
-            for i in network_dict
-        ])
-        
-        # convert to DataFrames with named columns
-        feature_vals_1_df = pd.DataFrame(feature_vals_1, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
-        feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
-        
-        # the two variables below are vectors with n rows
-        pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
-        pred_Y_intervene_A0 = model.predict_proba(feature_vals_0_df)[:, 1]
-        
-        contrasts.append(pred_Y_intervene_A1 - pred_Y_intervene_A0)
+    with tqdm(total=len(L_draws), desc="Processing L_draws", ncols=70) as pbar:
+        for L_draw in L_draws:
+            l_j_sums = {i: np.sum([L_draw[nb] for nb in network_dict[i]]) 
+                        for i in network_dict}
+            
+            # order of the features: a_i  l_i  l_j_sum  a_j_sum
+            feature_vals_1 = np.array([
+                [1, L_draw[i], l_j_sums[i], 1 * len(network_dict[i])]
+                for i in network_dict
+            ])
+            feature_vals_0 = np.array([
+                [0, L_draw[i], l_j_sums[i], 0 * len(network_dict[i])]
+                for i in network_dict
+            ])
+            
+            # convert to DataFrames with named columns
+            feature_vals_1_df = pd.DataFrame(feature_vals_1, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
+            feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
+            
+            # the two variables below are vectors with n rows
+            pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
+            pred_Y_intervene_A0 = model.predict_proba(feature_vals_0_df)[:, 1]
+            
+            contrasts.append(pred_Y_intervene_A1 - pred_Y_intervene_A0)
+            pbar.update()
+            
     return contrasts
 
 class CustomLogisticRegression:

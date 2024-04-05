@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import warnings
-
+from tqdm import tqdm
 
 def ring_adjacency_matrix(num_units):
 
@@ -56,24 +56,8 @@ def biedge_sample_L(network_adj_mat, params, n_draws=1):
     cov_mat = np.where(network_adj_mat > 0, cov_mat, 0.0)
     np.fill_diagonal(cov_mat, var)
     
-    try:
-        with warnings.catch_warnings(record=True) as w:
-            L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
-            for warning in w:
-                if "covariance is not symmetric positive-semidefinite." in str(warning.message):
-                    print("Warning occurred:", warning.message)
-                    print("COV, VAR, MEAN:", cov, var, mean)
-                    print(cov_mat)
-                    print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
-                    break
-    except np.linalg.LinAlgError as e:
-        print("LinAlgError occurred:", e)
-        print("Cov mat", cov_mat)
-        print("network:", network_adj_mat)
-        print("MAX DEG", np.max(np.sum(network_adj_mat, axis=1)))
-        if np.isnan(cov_mat).any() or np.isinf(cov_mat).any():
-            print("Covariance matrix contains NaN or inf values.")
-        L = []
+    L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
+           
     # try:
     #     L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
     # except RuntimeWarning as rw:
@@ -102,10 +86,7 @@ def biedge_sample_A(network, L, params):
     U = np.where(network == 1, U, network)  # apply network mask
 
     pA = expit(params[2] + params[3]*L + params[4]*(L@network) + params[5]*U.sum(axis=0))
-    try:
-        A = np.random.binomial(1, pA)
-    except ValueError:
-        print(pA)
+    A = np.random.binomial(1, pA)
 
     return A
 
@@ -148,24 +129,18 @@ def biedge_sample_Ys(network_adj_mat, Ls, As, params):
     return Ys
 
 def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every=1):
-    # TODO: this can be changed to a more general version: the user specify 
-    # how much to thin autocorrealtion, and this funciton can return a list 
-    # of "independent" gibbs sample Ls. The user will also specify how many samples
-    # they want.
-
     Ls = []
     # initialize a vector of Ls
     L = np.random.binomial(1, 0.5, len(network_adj_mat))
 
     # keep sampling an L vector till burn in is done
-    for gibbs_iter in range(burn_in + n_draws*select_every):
+    for gibbs_iter in tqdm(range(burn_in + n_draws*select_every), desc="Gibbs sampling progress"):
         for i in range(len(network_adj_mat)):
             pLi_given_rest = expit(params[0] + params[1]*np.dot(L, network_adj_mat[i, :]))
             L[i] = np.random.binomial(1, pLi_given_rest)
 
         if gibbs_iter >= burn_in and gibbs_iter % select_every == 0:
             Ls.append(L.copy())
-    
     Ls = np.array(Ls)
     return Ls
 
@@ -180,6 +155,7 @@ def gibbs_sample_A(network, L, params, burn_in=200):
                                    params[2]*np.dot(A, network[i, :]) +
                                    params[3]*np.dot(L, network[i, :]))
             A[i] = np.random.binomial(1, pAi_given_rest)
+        
 
     return A
 
@@ -187,7 +163,7 @@ def gibbs_sample_Y(network_adj_mat, L, A, params, burn_in=200):
     Y = np.random.binomial(1, 0.5, len(network_adj_mat))
 
     # keep sampling an Y vector till burn in is done
-    for m in range(burn_in):
+    for m in tqdm(range(burn_in), desc="Gibbs sampling progress"):
         for i in range(len(network_adj_mat)):
             pYi_given_rest = expit(params[0] + params[1]*L[i] + params[2]*A[i] +
                                    params[3]*np.dot(L, network_adj_mat[i, :]) +
@@ -529,10 +505,3 @@ def assemble_estimation_df(network, ind_set, L, A, Y):
     df = pd.DataFrame(data_list) 
     return df   
 
-
-# TODO: check consistency of autog
-# TODO: implement estimation strategy (predict Yi using A_Ni,i L_Ni,i using 1 hop data) for UBB and check consistency
-# TODO: show that UBB and BBB case, when estimated using autog, is inconsistent
-
-# Question: should the true causal effect of the UBB case andt the BBB case be the same?
-# Question: for the UBB case, why does changing the coefficient of U change true causal effect?

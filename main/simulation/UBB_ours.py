@@ -17,19 +17,20 @@ def parallel_helper(n_units):
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, 
                          L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
     return estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
-                                       N_SIMULATIONS, 
+                                       n_units, 
                                        gibbs_select_every=GIBBS_SELECT_EVERY, 
                                        burn_in=BURN_IN)
   
 def main():
     ''' evaluate true network causal effects '''
-    _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE, MAX_NEIGHBORS)
-    causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, N_SIMULATIONS)
+    # _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE, MAX_NEIGHBORS)
+    # causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, TRUE_CAUSAL_EFFECT_N_UNIT)
+    causal_effect_true = 0
     print("True causal effect:", causal_effect_true)
     
     ''' using autog to estimate causal effects from data generated from UBB '''
     causal_effect_ests = {}
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    with ProcessPoolExecutor() as executor:
         for n_units in N_UNITS_LIST:
             print("[PROGRESS] n units", n_units)
             results = executor.map(parallel_helper, [n_units]*N_ESTIMATES)
