@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "BBB_ours" # "BUU_autog" #
+filename = "BUU_autog" #"BBB_ours" # 
 dirname = ""
 
 df = pd.read_csv(f'./result{dirname}/{filename}.csv')
