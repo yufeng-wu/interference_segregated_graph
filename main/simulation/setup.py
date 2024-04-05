@@ -6,6 +6,8 @@ from our_estimation_methods import *
 # for cleaner output
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+MAX_WORKERS = 10
+
 # the common set up of my tests
 TRUE_CAUSAL_EFFECT_N_UNIT = 2000
 AVG_DEGREE = 5

@@ -29,7 +29,7 @@ def main():
     
     ''' using autog to estimate causal effects from data generated from BBB '''
     causal_effect_ests = {}
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for n_units in N_UNITS_LIST:
             print("[PROGRESS] n units", n_units)
             results = executor.map(parallel_helper, [n_units]*N_ESTIMATES)
