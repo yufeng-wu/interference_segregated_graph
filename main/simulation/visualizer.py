@@ -12,7 +12,7 @@ plt.figure(figsize=(10, 6))
 for n_sample in n_samples:
     # add some jitter
     x_vals = np.random.normal(n_sample, 100, len(df[f'n units {n_sample}']))
-    #plt.plot(x_vals, df[f'n units {n_sample}'], 'ro', markersize=2, alpha=0.3)
+    # plt.plot(x_vals, df[f'n units {n_sample}'], 'ro', markersize=2, alpha=0.1)
     plt.boxplot(df[f'n units {n_sample}'], positions=[n_sample], widths=200)
 
 # also add a line for the true causal effect
