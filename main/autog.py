@@ -179,18 +179,24 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
     
     # initialize Ys as a 2D array with the same shape as Ls and As
     Ys = np.random.binomial(1, 0.5, Ls.shape)
+    
+    pre_calculated_values = [params[0] + 
+                            params[1]*Ls[:, i] + 
+                            params[2]*As[:, i] +
+                            params[3]*np.dot(Ls, network_adj_mat[i, :]) +
+                            params[4]*np.dot(As, network_adj_mat[i, :])
+                            for i in range(len(network_adj_mat))]
+    
+    print(len(pre_calculated_values))
+    print(len(pre_calculated_values[0]))
 
     # keep sampling an Y vector till burn in is done
     with tqdm(total=burn_in*len(network_adj_mat), desc="Sampling progress") as pbar:
         for m in range(burn_in):
             for i in range(len(network_adj_mat)):    
                 # pYi_given_rest is a list of probabilities of length n_simulations
-                pYi_given_rest = expit(params[0] + 
-                                    params[1]*Ls[:, i] + 
-                                    params[2]*As[:, i] +
-                                    params[3]*np.dot(Ls, network_adj_mat[i, :]) +
-                                    params[4]*np.dot(As, network_adj_mat[i, :]) +
-                                    params[5]*np.dot(Ys, network_adj_mat[i, :]))
+                pYi_given_rest = expit(pre_calculated_values[i] + 
+                                       params[5]*np.dot(Ys, network_adj_mat[i, :]))
 
                 Ys[:, i] = np.random.binomial(1, pYi_given_rest)
                 pbar.update(1)
