@@ -150,7 +150,7 @@ def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
     ''' vectorized '''
     # dimension of Ls is n_simulations x n_units
     Ls = biedge_sample_Ls(network_adj_mat, params_L, n_draws=n_simulations)
-    
+    print("Sampling of Ls done!")
     As_1 = np.ones(Ls.shape)
     As_0 = np.zeros(Ls.shape)
 
