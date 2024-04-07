@@ -177,6 +177,8 @@ def biedge_sample_Ys(network_adj_mat, Ls, As, params):
                           size=(Ls.shape[0], # n_simulations
                                 network_adj_mat.shape[0], # n_units
                                 network_adj_mat.shape[1])) # n_units
+    print("samling of Us done")
+    
     Us = np.triu(Us) + np.triu(Us, 1).transpose((0, 2, 1))  # make U symmetric
     Us = np.where(network_adj_mat == 1, Us, 0)  # apply network mask
     
