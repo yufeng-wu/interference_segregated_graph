@@ -190,8 +190,12 @@ def biedge_sample_Ys(network_adj_mat, Ls, As, params):
                params[6]*(As@network_adj_mat) + 
                params[7]*Us.sum(axis=-1)) # sum across the most inner axis of Us
     
+    del Us # delete for memory efficiency
+    
     # dimension of Ys is n_simulations x n_units
     Ys = np.random.binomial(1, pY)
+    
+    del pY # delete for memory efficiency
     return Ys
 
 def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every=1):
