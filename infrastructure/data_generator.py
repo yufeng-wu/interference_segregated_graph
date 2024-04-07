@@ -1,4 +1,4 @@
-from network_utils import create_random_network, graph_to_edges
+from .network_utils import create_random_network, graph_to_edges
 from scipy.special import expit
 from scipy.stats import norm, beta
 import numpy as np
@@ -6,7 +6,7 @@ import pandas as pd
 import random
 import networkx as nx
 from scipy.sparse import csr_matrix
-import tqdm
+from tqdm import tqdm
 
 def sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, 
                 true_L, true_A, true_Y, burn_in):
