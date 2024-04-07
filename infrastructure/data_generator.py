@@ -151,52 +151,73 @@ def biedge_sample_Y(network_adj_mat, L, A, params):
     return Y
 
 def biedge_sample_Ys(network_adj_mat, Ls, As, params):
-    '''
-    Sample multiple realizations of the Y layer assuming the presence of a
-    bidirected edge between the Y variables of neighbors of the network.
+    n_units = network_adj_mat.shape[0]
+    n_total_simulations = Ls.shape[0]
+
+    Ys_list = []
+    for i in range(0, n_total_simulations, 100):
+        end_idx = min(i + 100, n_total_simulations)
+        current_Ls = Ls[i:end_idx]
+        current_As = As[i:end_idx]
+
+        Us = np.random.normal(loc=params[0], scale=params[1], 
+                              size=(current_Ls.shape[0], n_units, n_units))
+        Us = np.triu(Us) + np.triu(Us, 1).transpose((0, 2, 1))
+        Us = np.where(network_adj_mat == 1, Us, 0)
+
+        pY = expit(params[2] + params[3]*current_Ls + params[4]*current_As + 
+                   params[5]*(current_Ls @ network_adj_mat) + 
+                   params[6]*(current_As @ network_adj_mat) + 
+                   params[7]*Us.sum(axis=-1))
+
+        Ys_list.append(np.random.binomial(1, pY))
+        print("lenght of Yslist:", len(Ys_list))
+        del Us, pY
+
+    return np.concatenate(Ys_list, axis=0)
+
+# def biedge_sample_Ys(network_adj_mat, Ls, As, params):
+#     '''
+#     Sample multiple realizations of the Y layer assuming the presence of a
+#     bidirected edge between the Y variables of neighbors of the network.
     
-    The number of realizations to sample is determined by the number of rows
-    in the Ls and As arrays.
+#     The number of realizations to sample is determined by the number of rows
+#     in the Ls and As arrays.
     
-    Args:
-        network_adj_mat: a numpy array representing the network adjacency matrix.
-        Ls: a n_simulations x n_units dimensional numpy array representing 
-            the sampled realizations of the L layer.
-        As: a n_simulations x n_units dimensional numpy array representing
-            the sampled realizations of the A layer.
-        params: a list of parameters for the Y layer.
+#     Args:
+#         network_adj_mat: a numpy array representing the network adjacency matrix.
+#         Ls: a n_simulations x n_units dimensional numpy array representing 
+#             the sampled realizations of the L layer.
+#         As: a n_simulations x n_units dimensional numpy array representing
+#             the sampled realizations of the A layer.
+#         params: a list of parameters for the Y layer.
         
-    Return:
-        Ys: a n_simulations x n_units dimensional numpy array representing the
-            sampled realizations of the Y layer, where the index of each simulation
-            corresponds to the index of the node in the network.
-    '''
-    # dimension of Us is n_simulations x n_units x n_units
-    Us = np.random.normal(loc=params[0], 
-                          scale=params[1], 
-                          size=(Ls.shape[0], # n_simulations
-                                network_adj_mat.shape[0], # n_units
-                                network_adj_mat.shape[1])) # n_units
-    print("samling of Us done")
+#     Return:
+#         Ys: a n_simulations x n_units dimensional numpy array representing the
+#             sampled realizations of the Y layer, where the index of each simulation
+#             corresponds to the index of the node in the network.
+#     '''
+#     # dimension of Us is n_simulations x n_units x n_units
+#     Us = np.random.normal(loc=params[0], 
+#                           scale=params[1], 
+#                           size=(Ls.shape[0], # n_simulations
+#                                 network_adj_mat.shape[0], # n_units
+#                                 network_adj_mat.shape[1])) # n_units
     
-    Us = np.triu(Us) + np.triu(Us, 1).transpose((0, 2, 1))  # make U symmetric
-    Us = np.where(network_adj_mat == 1, Us, 0)  # apply network mask
+#     Us = np.triu(Us) + np.triu(Us, 1).transpose((0, 2, 1))  # make U symmetric
+#     Us = np.where(network_adj_mat == 1, Us, 0)  # apply network mask
     
-    # dimension of pY is n_simulations x n_units
-    pY = expit(params[2] + 
-               params[3]*Ls + 
-               params[4]*As + 
-               params[5]*(Ls@network_adj_mat) + 
-               params[6]*(As@network_adj_mat) + 
-               params[7]*Us.sum(axis=-1)) # sum across the most inner axis of Us
+#     # dimension of pY is n_simulations x n_units
+#     pY = expit(params[2] + 
+#                params[3]*Ls + 
+#                params[4]*As + 
+#                params[5]*(Ls@network_adj_mat) + 
+#                params[6]*(As@network_adj_mat) + 
+#                params[7]*Us.sum(axis=-1)) # sum across the most inner axis of Us
     
-    del Us # delete for memory efficiency
-    
-    # dimension of Ys is n_simulations x n_units
-    Ys = np.random.binomial(1, pY)
-    
-    del pY # delete for memory efficiency
-    return Ys
+#     # dimension of Ys is n_simulations x n_units
+#     Ys = np.random.binomial(1, pY)
+#     return Ys
 
 def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every=1):
     '''
