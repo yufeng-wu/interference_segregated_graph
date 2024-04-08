@@ -18,7 +18,7 @@ def parallel_helper(n_units):
                      args=(L, A, Y, network_adj_mat)).x
     
     return causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, 
-                              N_SIM_MULTIPLIER*n_units)
+                              int(N_SIM_MULTIPLIER*n_units))
   
         
 def main():

@@ -13,7 +13,7 @@ def parallel_helper(n_units):
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
     return estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
                                        burn_in=BURN_IN,
-                                       n_simulations=N_SIM_MULTIPLIER*n_units,
+                                       n_simulations=int(N_SIM_MULTIPLIER*n_units),
                                        gibbs_select_every=GIBBS_SELECT_EVERY)
 
 def main():
