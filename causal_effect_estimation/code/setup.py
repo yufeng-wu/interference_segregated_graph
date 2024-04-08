@@ -17,8 +17,9 @@ TRUE_CAUSAL_EFFECT_N_UNIT = 5000
 AVG_DEGREE = 5
 MAX_NEIGHBORS = 10
 N_UNITS_LIST = [500, 1000, 2000, 3000, 4000, 5000]
-N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
-N_SIMULATIONS = 500 # the number of L samples to draw 
+N_ESTIMATES = 200 # number of causal effect estimates for each n_unit
+# N_SIMULATIONS = 500 # the number of L samples to draw 
+N_SIM_MULTIPLIER = 10 # how much simulations to draw as a factor of n_units
 BURN_IN = 200
 GIBBS_SELECT_EVERY = 3
 SAVE_OUTPUT_TO_DIR = "../result/raw_output/"
@@ -99,8 +100,12 @@ def est_w_autog_parallel_helper(params):
     # compute the average causal effect using estimated parameters
     Y_A1_est = estimate_causal_effects_U_U(network_adj_mat, 1, L_est, Y_est, 
                                            burn_in=BURN_IN, 
+                                           n_simulations=N_SIM_MULTIPLIER*n_units,
+                                           gibbs_select_every=GIBBS_SELECT_EVERY,
                                            L_is_continuous=(L_edge_type == 'B'))
     Y_A0_est = estimate_causal_effects_U_U(network_adj_mat, 0, L_est, Y_est, 
                                            burn_in=BURN_IN, 
+                                           n_simulations=N_SIM_MULTIPLIER*n_units,
+                                           gibbs_select_every=GIBBS_SELECT_EVERY,
                                            L_is_continuous=(L_edge_type == 'B'))
     return Y_A1_est - Y_A0_est

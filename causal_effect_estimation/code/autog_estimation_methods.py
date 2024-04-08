@@ -72,10 +72,12 @@ def npll_Y(params, L, A, Y, network_adj_mat):
     return -np.sum(np.log(pY))
 
 def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y, 
-                                burn_in=200, K=100, N=3, L_is_continuous=False):
+                                burn_in=200, n_simulations=100, 
+                                gibbs_select_every=3, L_is_continuous=False):
     '''
     Evaluate Y(A=A_value) in a network using Gibbs sampling, assuming the L, 
-    A, and Y layers are connected by unidirected edges.
+    A, and Y layers are connected by unidirected edges. The implementation 
+    follows the "Gibbs Sampler I" algorithm in the original Auto-G paper.
     
     Y(A=A_value) is the average value of Y_i across all units i in the network 
     when all A_i are intervened to be A_value. 
@@ -93,8 +95,8 @@ def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y,
             Otherwise, params_L is a length 2 numpy array of the form [intercept, coefficient].
         params_Y: parameters of the Y layer. A length 6 numpy array.
         burn_in: number of iterations to burn-in the Markov Chain. Default is 200.
-        K: number of rows in matrix_Ys, i.e., how many realizations of Y to sample. Default is 100.
-        N: thin the Markov Chain for every N iteration. Default is 3.
+        n_simulations: number of rows in matrix_Ys, i.e., how many realizations of Y to sample. Default is 100.
+        gibbs_select_every: thin the Markov Chain for every N iteration. Default is 3.
         L_is_continuous: a boolean indicating whether the L layer is continuous. Default is False.
         
     
@@ -117,11 +119,13 @@ def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y,
     # matrix_Ys is a list of length K, where each element is a length n_units vector
     matrix_Ys = []
 
-    # run the Gibbs sampler for burn_in + K*N iterations, where at each iteration
-    # we iterate over all units in the network.
-    for m in range(burn_in + K*N):
+    # run the Gibbs sampler for burn_in +  n_simulations*gibbs_select_every iterations, 
+    # where at each iteration we iterate over all units in the network.
+    for m in range(burn_in + n_simulations*gibbs_select_every):
         for i in range(len(network_adj_mat)):
             
+            # at each iter, we do two things:
+            # 1) update L[i] 
             if L_is_continuous:
                 # params_L is length three when L_continuous_data is True
                 mu = params_L[0] + params_L[1] * np.dot(L, network_adj_mat[i, :])
@@ -137,10 +141,11 @@ def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y,
                                    params_Y[4]*np.dot(A, network_adj_mat[i, :]) +
                                    params_Y[5]*np.dot(Y, network_adj_mat[i, :]))
             
+            # 2) update Y[i]
             # sample a new value for Y[i] based on the conditional probability
             Y[i] = np.random.binomial(1, pYi_given_rest)
 
-        if m > burn_in and m % N == 0:
+        if m > burn_in and m % gibbs_select_every == 0:
             # store the Y values after burn-in and thinning 
             matrix_Ys.append(Y.copy())
 

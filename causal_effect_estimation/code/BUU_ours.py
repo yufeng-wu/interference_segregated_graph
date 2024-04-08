@@ -17,15 +17,16 @@ def parallel_helper(n_units):
     Y_est = minimize(npll_Y, x0=np.random.uniform(-1, 1, 6), 
                      args=(L, A, Y, network_adj_mat)).x
     
-    return causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, N_SIMULATIONS)
+    return causal_effects_B_U(network_adj_mat, L_est, Y_est, BURN_IN, 
+                              N_SIM_MULTIPLIER*n_units)
   
         
 def main():
     ''' evaluate true network causal effects '''
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
                                                AVG_DEGREE, MAX_NEIGHBORS)
-    causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, 
-                                            BURN_IN, N_SIMULATIONS)
+    causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, 
+                                            N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT)
     print("True causal effect:", causal_effect_true)
     
     ''' using our method to estimate causal effects from data generated from BUU '''

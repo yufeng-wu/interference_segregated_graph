@@ -12,8 +12,14 @@ def main():
     
     ''' evaluate true network causal effects '''
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE)
-    Y_A1_true = estimate_causal_effects_U_U(network_adj_mat, 1, L_TRUE, Y_TRUE, burn_in=BURN_IN)
-    Y_A0_true = estimate_causal_effects_U_U(network_adj_mat, 0, L_TRUE, Y_TRUE, burn_in=BURN_IN)
+    Y_A1_true = estimate_causal_effects_U_U(network_adj_mat, 1, L_TRUE, Y_TRUE, 
+                                            burn_in=BURN_IN,
+                                            n_simulations=N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT,
+                                            gibbs_select_every=GIBBS_SELECT_EVERY)
+    Y_A0_true = estimate_causal_effects_U_U(network_adj_mat, 0, L_TRUE, Y_TRUE, 
+                                            burn_in=BURN_IN,
+                                            n_simulations=N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT,
+                                            gibbs_select_every=GIBBS_SELECT_EVERY)
     causal_effect_true = Y_A1_true - Y_A0_true
     
     print("True causal effect:", causal_effect_true)

@@ -134,8 +134,11 @@ def estimate_biedge_L_params(network_dict, L, max_degree_of_network):
     est_cov = est_cov_mat[0][1] # get the covariance between Li and Lj
     return est_cov, est_var, est_mean
 
-def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in=200, 
-                            n_simulations=100):
+def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in, 
+                            n_simulations):
+    '''
+    can evaluate both true and estimated causal effects
+    '''
     Ls = biedge_sample_Ls(network_adj_mat, params_L, n_draws=n_simulations)
 
     As_1 = np.ones(Ls.shape)
@@ -146,7 +149,7 @@ def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in=200,
     return np.mean(Ys_A1 - Ys_A0)
 
 def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
-                            n_simulations=100):
+                            n_simulations):
     ''' vectorized '''
     # dimension of Ls is n_simulations x n_units
     Ls = biedge_sample_Ls(network_adj_mat, params_L, n_draws=n_simulations)
@@ -161,7 +164,7 @@ def true_causal_effects_B_B(network_adj_mat, params_L, params_Y,
     return np.mean(Ys_A1 - Ys_A0)
 
 def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
-                                max_degree_of_network, n_simulations=100):
+                                max_degree_of_network, n_simulations):
     # 1) get iid realizations of p(L)
     L_est = estimate_biedge_L_params(network_dict, L, max_degree_of_network)
 
@@ -176,8 +179,8 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
     return np.mean(contrasts)
 
-def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in=200, 
-                       n_simulations=100, gibbs_select_every=3):
+def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
+                       n_simulations, gibbs_select_every):
     # dimension of Ls is n_simulations x n_units
     Ls = gibbs_sample_L(network_adj_mat, params_L, burn_in, 
                         n_draws=n_simulations, select_every=gibbs_select_every)
@@ -191,8 +194,8 @@ def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in=200,
     
     return np.mean(Ys_A1 - Ys_A0)
 
-def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
-                               n_draws_from_pL, gibbs_select_every, burn_in):
+def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, burn_in,
+                               n_simulations, gibbs_select_every):
     ''' 
     Inputs:
         - gibbs_select_every: select every gibbs_select_every-th element of 
@@ -210,7 +213,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y,
     #   - first, get independent realizations of p(L) using Gibbs sampling
     #     and thin auto-correlation 
     Ls = gibbs_sample_L(network_adj_mat=network_adj_mat, params=params_L, 
-                        burn_in=burn_in, n_draws=n_draws_from_pL,
+                        burn_in=burn_in, n_draws=n_simulations,
                         select_every=gibbs_select_every)
 
     # a list of lists
