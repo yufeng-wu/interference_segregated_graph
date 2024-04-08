@@ -21,7 +21,7 @@ def main():
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE, MAX_NEIGHBORS)
     causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, 
                                                  burn_in=BURN_IN, 
-                                                 n_simulations=N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT,
+                                                 n_simulations=int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT),
                                                  gibbs_select_every=GIBBS_SELECT_EVERY)
     print("True causal effect:", causal_effect_true)
     
