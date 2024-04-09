@@ -13,10 +13,10 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # the common set up of my tests
-TRUE_CAUSAL_EFFECT_N_UNIT = 5000
+TRUE_CAUSAL_EFFECT_N_UNIT = 2000#5000
 AVG_DEGREE = 5
 MAX_NEIGHBORS = 10
-N_UNITS_LIST = [500, 1000, 2000, 3000, 4000, 5000]
+N_UNITS_LIST = [500, 1500]#[500, 1000, 2000, 3000, 4000, 5000]
 N_ESTIMATES = 100 # number of causal effect estimates for each n_unit
 # N_SIMULATIONS = 500 # the number of L samples to draw 
 N_SIM_MULTIPLIER = 0.1 # how much simulations to draw as a factor of n_units
@@ -40,7 +40,7 @@ def GET_TRUE_PARAMS(L_edge_type, A_edge_type, Y_edge_type):
     assert A_edge_type in ['U', 'B']
     assert Y_edge_type in ['U', 'B']
     
-    L_TRUE = np.array([-0.3, 0.4]) if L_edge_type == 'U' else np.array([0.3, 3.5, 0.7]) 
+    L_TRUE = np.array([-0.3, 0.4]) if L_edge_type == 'U' else np.array([0.1, 3.5, 0.7]) 
     A_TRUE = np.array([5, 4, -2, -1.2]) if A_edge_type == 'U' else np.array([2, 1, 1.3, -0.4, -0.7, 0.2])
     Y_TRUE = np.array([2, 1, 1.5, -5.3, 1, -4]) if Y_edge_type == 'U' else np.array([0, 1, -3, 0.1, 1, -0.3, 1, 2])
     

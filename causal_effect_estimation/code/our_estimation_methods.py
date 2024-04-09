@@ -167,7 +167,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
                                 max_degree_of_network, n_simulations):
     # 1) get iid realizations of p(L)
     L_est = estimate_biedge_L_params(network_dict, L, max_degree_of_network)
-
+    print("L est:", L_est)
     # L_est = [0.3, 3.5, 0.7] # give it true params for now.
     Ls = biedge_sample_Ls(network_adj_mat, L_est, n_draws=n_simulations)
     
@@ -177,6 +177,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
+    print("MEAN: ", np.mean(contrasts))
     return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
@@ -232,17 +233,17 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
             
             # order of the features: a_i  l_i  l_j_sum  a_j_sum
             feature_vals_1 = np.array([
-                [1, L_draw[i], l_j_sums[i], 1 * len(network_dict[i])]
+                [1, L_draw[i], l_j_sums[i], 1 * len(network_dict[i]), len(network_dict[i])]
                 for i in network_dict
             ])
             feature_vals_0 = np.array([
-                [0, L_draw[i], l_j_sums[i], 0 * len(network_dict[i])]
+                [0, L_draw[i], l_j_sums[i], 0 * len(network_dict[i]), len(network_dict[i])]
                 for i in network_dict
             ])
             
             # convert to DataFrames with named columns
-            feature_vals_1_df = pd.DataFrame(feature_vals_1, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
-            feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum'])
+            feature_vals_1_df = pd.DataFrame(feature_vals_1, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum', 'nb_count'])
+            feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum', 'nb_count'])
             
             # the two variables below are vectors with n rows
             pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
@@ -265,13 +266,16 @@ class CustomLogisticRegression:
         # use the custom estimator to estimate the parameters for our 
         # logistic regression model. params_logistic_reg is of size 5.
         params_logistic_reg = minimize(self._npll_logistic_regression, 
-                                       x0=np.random.uniform(-1, 1, 5)).x
+                                       x0=np.random.uniform(-1, 1, 6)).x
         return params_logistic_reg
 
     def _npll_logistic_regression(self, params):
-        pY1 = expit((params[0] + params[1]*self.L + params[2]*self.A + 
+        pY1 = expit((params[0] + 
+                     params[1]*self.L + 
+                     params[2]*self.A + 
                      params[3]*(self.L@self.network_adj_mat) + 
-                     params[4]*(self.A@self.network_adj_mat)))
+                     params[4]*(self.A@self.network_adj_mat) +
+                     params[5]*np.sum(self.network_adj_mat, axis=1)))
         pY = self.Y*pY1 + (1-self.Y)*(1-pY1)
         # the expit() function outputs 0.0 when the input is reasonably small, 
         # so we replace 0 with a small const to ensure numerical stability
@@ -281,15 +285,31 @@ class CustomLogisticRegression:
     def predict_proba(self, X):
         # X is a pd.DataFrame with certain columns with dimension n x 4
         # p1 is a matrix of size n x 1
-        p1 = expit(self.params[0] + self.params[1]*X['l_i'] + 
+        p1 = expit(self.params[0] + 
+                   self.params[1]*X['l_i'] + 
                    self.params[2]*X['a_i'] + 
                    self.params[3]*X['l_j_sum'] + 
-                   self.params[4]*X['a_j_sum'])
+                   self.params[4]*X['a_j_sum'] +
+                   self.params[5]*X['nb_count'])
         # return in the same style as that of a sklearn model
         return np.column_stack((1-p1, p1))
 
 def build_EYi_model(L, A, Y, network_adj_mat):
-    return CustomLogisticRegression(L, A, Y, network_adj_mat)
+    model = CustomLogisticRegression(L, A, Y, network_adj_mat)
+    
+    # majority_class = np.argmax(np.bincount(Y))
+    # naive_accuracy = np.mean(Y == majority_class)
+    
+    # pY = expit((model.params[0] + model.params[1]*L + model.params[2]*A + 
+    #                  model.params[3]*(L@network_adj_mat) + 
+    #                  model.params[4]*(A@network_adj_mat)))
+    # # now compare the predictoin with Y
+    
+    # Y_pred = (pY >= 0.5).astype(int)
+    # model_accuracy = np.mean(Y_pred == Y)
+    #print(f"Naive Accuracy: {naive_accuracy:.3f}", f"Model Accuracy: {model_accuracy:.3f}")
+
+    return model
 
     # OLD IMPLEMENTATION USING ML
     # ind_set_1_hop = maximal_n_apart_independent_set(network_dict, n=1)
