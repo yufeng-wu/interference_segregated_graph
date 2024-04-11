@@ -26,7 +26,6 @@ def main():
                                                   int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT))
 
     print("True causal effect:", causal_effect_true)
-    # causal_effect_true = 0.4317348
     
     ''' using autog to estimate causal effects from data generated from BBB '''
     causal_effect_ests = {}
