@@ -26,15 +26,28 @@ def main():
                                                   int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT))
 
     print("True causal effect:", causal_effect_true)
-    # causal_effect_true = 0
+    # causal_effect_true = 0.4317348
     
     ''' using autog to estimate causal effects from data generated from BBB '''
     causal_effect_ests = {}
+    
     with ProcessPoolExecutor() as executor:
         for n_units in N_UNITS_LIST:
             print("[PROGRESS] n units", n_units)
             results = executor.map(parallel_helper, [n_units]*N_ESTIMATES)
-            causal_effect_ests[f'n units {n_units}'] = list(results)
+            
+            # Unpack the results into two separate lists
+            estimates, L_ests = zip(*results)
+            
+            causal_effect_ests[f'n units {n_units}'] = list(estimates)
+            causal_effect_ests[f'n units {n_units} L_est'] = list(L_ests)
+            
+    # with ProcessPoolExecutor() as executor:
+    #     for n_units in N_UNITS_LIST:
+    #         print("[PROGRESS] n units", n_units)
+    #         results = executor.map(parallel_helper, [n_units]*N_ESTIMATES)
+            
+    #         causal_effect_ests[f'n units {n_units}'] = list(results)
     
     ''' save results '''
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()

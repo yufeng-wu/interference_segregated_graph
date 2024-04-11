@@ -1,5 +1,10 @@
 import numpy as np
+import pandas as pd
 from scipy.special import expit
+
+import sys
+sys.path.append("../../")
+from infrastructure.network_utils import kth_order_neighborhood
 
 def npll_L(params, L, network_adj_mat):
     '''
@@ -151,46 +156,47 @@ def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y,
 
     return np.mean(matrix_Ys)
 
-# TODO: not sure what this funtion is for
-# def assemble_estimation_df(network, ind_set, L, A, Y):
-#     '''
-#     Creates dataframe for causal effect estimation. 
+# TODO: this function is used by the old implementation of our_estimation_methods.build_EYi_model()
+def assemble_estimation_df(network, ind_set, L, A, Y):
+    '''
+    Creates dataframe for causal effect estimation. 
     
-#     Inputs:
-#         - network
-#         - ind_set: a maximal 1-apart independent set obtained from the network
-#         - sample: a single realization (L, A, Y) of the network where L, A, Y 
-#                   are vectors of the shape (1, size of network).
+    Inputs:
+        - network
+        - ind_set: a maximal 1-apart independent set obtained from the network
+        - sample: a single realization (L, A, Y) of the network where L, A, Y 
+                  are vectors of the shape (1, size of network).
     
-#     Return:
-#         A pd.DataFrame object that with the following entries for each element 
-#         of the ind_set:
-#             'i': id of the subject
-#             'y_i': the value of Y_i in the network realization
-#             'a_i': the value of A_i in the network realization
-#             'l_i': the value of L_i in the network realization
-#             'l_j_sum': sum of [L_j for j in neighbors of i]
-#             'a_j_sum': sum of [A_j for j in neighbors of i]
-#     '''
-#     data_list = []
+    Return:
+        A pd.DataFrame object that with the following entries for each element 
+        of the ind_set:
+            'i': id of the subject
+            'y_i': the value of Y_i in the network realization
+            'a_i': the value of A_i in the network realization
+            'l_i': the value of L_i in the network realization
+            'l_j_sum': sum of [L_j for j in neighbors of i]
+            'a_j_sum': sum of [A_j for j in neighbors of i]
+    '''
+    data_list = []
 
-#     for i in ind_set:
-#         l_i = L[i]
-#         a_i = A[i]
-#         y_i = Y[i]
+    for i in ind_set:
+        l_i = L[i]
+        a_i = A[i]
+        y_i = Y[i]
 
-#         # get the neighbors of i as a list
-#         N_i = kth_order_neighborhood(network, i, 1)
+        # get the neighbors of i as a list
+        N_i = kth_order_neighborhood(network, i, 1)
 
-#         data_list.append({
-#             'i' : i,
-#             'y_i': y_i,
-#             'a_i': a_i,
-#             'l_i': l_i,
-#             'l_j_sum': np.sum([L[j] for j in N_i]),
-#             'a_j_sum': np.sum([A[j] for j in N_i]),
-#         })
+        data_list.append({
+            'i' : i,
+            'y_i': y_i,
+            'a_i': a_i,
+            'l_i': l_i,
+            'l_j_sum': np.sum([L[j] for j in N_i]),
+            'a_j_sum': np.sum([A[j] for j in N_i]),
+            'nb_count': len(N_i)
+        })
 
-#     df = pd.DataFrame(data_list) 
-#     return df   
+    df = pd.DataFrame(data_list) 
+    return df   
 

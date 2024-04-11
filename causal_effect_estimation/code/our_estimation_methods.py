@@ -67,19 +67,30 @@ def ricf(L1, L2, num_iter, var, max_degree_of_network):
 
             Z_minusi = epsilon_minusi @ omega_minusii_inv.T
             Z = np.insert(Z_minusi, var_index, 0, axis=1)
-
-            # bounds are to ensure positive definiteness, and we also minus 
-            # a small constant in case the rounding goes the wrong way
-            bound = (-var/max_degree_of_network+1e-6, var/max_degree_of_network-1e-6)
             
-            sol = minimize(least_squares_loss, 
-                           np.zeros(d),
-                           args=(L_df.values, Z, var_index),
-                           bounds=[bound]*d)
-                
-            # update covariance matrix according to the solution
-            cov_mat[:, var_index] = cov_mat[var_index, :] = sol.x
-
+            # bounds are to ensure positive definiteness, and we also add/minus 
+            # a small constant in case the rounding goes the wrong way
+            bound = (-var/float(max_degree_of_network) + 1e-10, 
+                      var/float(max_degree_of_network) - 1e-10)
+            
+            # getting the solution from five random initializations
+            # and pick the one with the smallest loss
+            best_solution = None
+            best_loss = np.inf
+            for _ in range(5):
+                # minimize by first setting a random start within the bounds
+                sol = minimize(least_squares_loss, 
+                               x0=np.random.uniform(low=bound[0], high=bound[1], size=d),
+                               args=(L_df.values, Z, var_index),
+                               method='L-BFGS-B',
+                               bounds=[bound]*d)
+                if sol.fun < best_loss:
+                    best_loss = sol.fun
+                    best_solution = sol
+            
+            # update covariance matrix according to the best solution
+            cov_mat[:, var_index] = cov_mat[var_index, :] = best_solution.x
+            
             # this is a trivial update for graphs with only bidirected edges
             var_mat[var_index, var_index] = var 
 
@@ -104,6 +115,8 @@ def estimate_biedge_L_params(network_dict, L, max_degree_of_network):
     # find a 1-hop independent set to estimate mean of L_i
     ind_set = maximal_n_apart_independent_set(network_dict, n=1)
     data = build_dataset(ind_set, L)
+    
+    est_var = np.var(data["L_i"]) # close-form MLE estimate
 
     # de-mean the data for easier estimate of covariance
     est_mean = np.mean(data["L_i"]) 
@@ -129,9 +142,9 @@ def estimate_biedge_L_params(network_dict, L, max_degree_of_network):
             L1.append(L[v2])
             L2.append(L[v1])
     
-    est_var = np.var(data["L_i"]) # close-form MLE estimate
     est_cov_mat = ricf(L1, L2, num_iter=20, var=est_var, max_degree_of_network=max_degree_of_network)
     est_cov = est_cov_mat[0][1] # get the covariance between Li and Lj
+    # est_cov = np.cov(L1, L2)[0][1]
     return est_cov, est_var, est_mean
 
 def causal_effects_B_U(network_adj_mat, params_L, params_Y, burn_in, 
@@ -167,8 +180,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
                                 max_degree_of_network, n_simulations):
     # 1) get iid realizations of p(L)
     L_est = estimate_biedge_L_params(network_dict, L, max_degree_of_network)
-    print("L est:", L_est)
-    # L_est = [0.3, 3.5, 0.7] # give it true params for now.
+
     Ls = biedge_sample_Ls(network_adj_mat, L_est, n_draws=n_simulations)
     
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
@@ -177,8 +189,9 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
-    print("MEAN: ", np.mean(contrasts))
-    return np.mean(contrasts)
+    
+    return np.mean(contrasts), L_est
+    # return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
                        n_simulations, gibbs_select_every):
@@ -295,7 +308,7 @@ class CustomLogisticRegression:
         return np.column_stack((1-p1, p1))
 
 def build_EYi_model(L, A, Y, network_adj_mat):
-    model = CustomLogisticRegression(L, A, Y, network_adj_mat)
+    return CustomLogisticRegression(L, A, Y, network_adj_mat)
     
     # majority_class = np.argmax(np.bincount(Y))
     # naive_accuracy = np.mean(Y == majority_class)
@@ -308,8 +321,6 @@ def build_EYi_model(L, A, Y, network_adj_mat):
     # Y_pred = (pY >= 0.5).astype(int)
     # model_accuracy = np.mean(Y_pred == Y)
     #print(f"Naive Accuracy: {naive_accuracy:.3f}", f"Model Accuracy: {model_accuracy:.3f}")
-
-    return model
 
     # OLD IMPLEMENTATION USING ML
     # ind_set_1_hop = maximal_n_apart_independent_set(network_dict, n=1)
