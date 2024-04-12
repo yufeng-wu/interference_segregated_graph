@@ -7,6 +7,7 @@ import random
 import networkx as nx
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
+from scipy.stats import multivariate_normal
 
 def sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type, 
                 true_L, true_A, true_Y, burn_in):
@@ -35,7 +36,7 @@ def sample_LAY(network_adj_mat, L_edge_type, A_edge_type, Y_edge_type,
     '''
     if L_edge_type == "U":
         assert len(true_L) == 2, "true_L must be a list of length 2 when L_edge_type is 'U'"
-        L = gibbs_sample_L(network_adj_mat, params=true_L, burn_in=burn_in, n_draws=1, select_every=1)[0]
+        L = gibbs_sample_Ls(network_adj_mat, params=true_L, burn_in=burn_in, n_draws=1, select_every=1)[0]
     elif L_edge_type == "B":
         assert len(true_L) == 3, "true_L must be a list of length 3 when L_edge_type is 'B'"
         L = biedge_sample_Ls(network_adj_mat, params=true_L, n_draws=1)[0]
@@ -78,8 +79,12 @@ def biedge_sample_Ls(network_adj_mat, params, n_draws=1):
     cov_mat = np.where(network_adj_mat > 0, cov_mat, 0.0)
     np.fill_diagonal(cov_mat, var)
     
-    L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
-           
+    # L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
+    # Generate samples using the 'rvs' method, scipy version
+    mvn_distribution = multivariate_normal(mean=[mean]*n_sample, cov=cov_mat)
+    L = mvn_distribution.rvs(size=n_draws)
+    if n_draws == 1:
+        L = [L]
     # try:
     #     L = np.random.multivariate_normal([mean]*n_sample, cov_mat, size=n_draws)
     # except RuntimeWarning as rw:
@@ -245,7 +250,8 @@ def biedge_sample_Ys(network_adj_mat, Ls, As, params):
 #     Ys = np.random.binomial(1, pY)
 #     return Ys
 
-def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every=1):
+def gibbs_sample_Ls(network_adj_mat, params, burn_in=200, n_draws=1, 
+                   select_every=1, data_type="binary"):
     '''
     Sample a single realization of the L layer assuming the presence of an
     undirected edge between the L variables of neighbors of the network. 
@@ -256,20 +262,30 @@ def gibbs_sample_L(network_adj_mat, params, burn_in=200, n_draws=1, select_every
         burn_in (int, optional): The number of iterations to discard at the beginning of the sampling process. Default is 200.
         n_draws (int, optional): The number of samples to draw from the distribution. Default is 1.
         select_every (int, optional): The interval / rate at which samples are selected from the Gibbs chain. Default is 1.
-    
+        data_type (str, optional): The type of data to sample. Can be either "binary" or "continuous". Default is "binary".
+        
     Returns:
         Ls (numpy.ndarray): The sampled L vectors from the Gibbs sampling process.
     '''
     Ls = []
     # initialize a vector of Ls
-    L = np.random.binomial(1, 0.5, len(network_adj_mat))
-
+    if data_type == "binary":
+        assert len(params) == 2, "params must be a list of length 2 when data_type is 'binary'"
+        L = np.random.binomial(1, 0.5, len(network_adj_mat))
+    elif data_type == "continuous":
+        assert len(params) == 3, "params must be a list of length 3 when data_type is 'continuous'"
+        L = np.random.normal(loc=params[0], scale=params[2], size=len(network_adj_mat))
+    else:
+        raise ValueError("data_type must be either 'binary' or 'continuous'")
+    
     # keep sampling an L vector till burn in is done
     for gibbs_iter in tqdm(range(burn_in + n_draws*select_every), desc="Gibbs sampling progress"):
         for i in range(len(network_adj_mat)):
-            pLi_given_rest = expit(params[0] + params[1]*np.dot(L, network_adj_mat[i, :]))
-            L[i] = np.random.binomial(1, pLi_given_rest)
-
+            if data_type == "binary":
+                pLi_given_rest = expit(params[0] + params[1]*np.dot(L, network_adj_mat[i, :]))
+                L[i] = np.random.binomial(1, pLi_given_rest)
+            elif data_type == "continuous":
+                L[i] = np.random.normal(loc=params[0] + params[1]*np.dot(L, network_adj_mat[i, :]), scale=params[2])
         if gibbs_iter >= burn_in and gibbs_iter % select_every == 0:
             Ls.append(L.copy())
     Ls = np.array(Ls)

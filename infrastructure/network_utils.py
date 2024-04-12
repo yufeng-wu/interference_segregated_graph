@@ -21,13 +21,26 @@ def kth_order_neighborhood(network, node, k):
     return neighbors
 
 def create_random_network(n, avg_degree, max_degree):
+    '''
+    Create a random network with n vertices, where each vertex has an average
+    degree of avg_degree and a maximum degree of max_degree.
+    
+    Args:
+        - n (int): number of vertices in the network
+        - avg_degree (int): average degree of the network
+        - max_degree (int): maximum degree of each vertex
+        
+    Returns:
+        - network_dict (dict): a dictionary (adjacency list) representation of the network
+        - network_adj_matrix (np.array): an adjacency matrix representation of the network
+    '''
     g = nx.fast_gnp_random_graph(n, avg_degree / (n - 1))
     for node in g.nodes:
         while g.degree[node] > max_degree:
             neighbors = list(g.neighbors(node))
             g.remove_edge(node, random.choice(neighbors))
-    adj_matrix = nx.adjacency_matrix(g).toarray()
-    return nx.to_dict_of_lists(g), adj_matrix
+    network_adj_matrix = nx.adjacency_matrix(g).toarray()
+    return nx.to_dict_of_lists(g), network_adj_matrix
 
 # def create_random_network(n, min_neighbors, max_neighbors):
 #     while True:

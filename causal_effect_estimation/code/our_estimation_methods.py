@@ -1,6 +1,6 @@
 import sys
 sys.path.append("../../")
-from infrastructure.maximal_independent_set import maximal_n_apart_independent_set
+from infrastructure.maximal_independent_set import maximal_n_hop_independent_set
 from infrastructure.data_generator import *
 from autog_estimation_methods import npll_L
 import pandas as pd
@@ -113,7 +113,7 @@ def estimate_biedge_L_params(network_dict, L, max_degree_of_network):
         return nx.to_dict_of_lists(LG)
     
     # find a 1-hop independent set to estimate mean of L_i
-    ind_set = maximal_n_apart_independent_set(network_dict, n=1)
+    ind_set = maximal_n_hop_independent_set(network_dict, n=1)
     data = build_dataset(ind_set, L)
     
     est_var = np.var(data["L_i"]) # close-form MLE estimate
@@ -126,7 +126,7 @@ def estimate_biedge_L_params(network_dict, L, max_degree_of_network):
     # find structures like "Li <-> Lj", but it could be other structures
     # such as chain of length three.
     edge_graph_dict = create_edge_graph(network_dict)
-    ind_set_2_hop_edge_graph = maximal_n_apart_independent_set(edge_graph_dict, n=2)
+    ind_set_2_hop_edge_graph = maximal_n_hop_independent_set(edge_graph_dict, n=2)
 
     L1 = []
     L2 = []
@@ -190,13 +190,12 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
     
-    return np.mean(contrasts), L_est
-    # return np.mean(contrasts)
+    return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
                        n_simulations, gibbs_select_every):
     # dimension of Ls is n_simulations x n_units
-    Ls = gibbs_sample_L(network_adj_mat, params_L, burn_in, 
+    Ls = gibbs_sample_Ls(network_adj_mat, params_L, burn_in, 
                         n_draws=n_simulations, select_every=gibbs_select_every)
     
     As_1 = np.ones(Ls.shape)
@@ -226,7 +225,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, burn_in,
     # 3) use params_L and model to estimate causal effects:
     #   - first, get independent realizations of p(L) using Gibbs sampling
     #     and thin auto-correlation 
-    Ls = gibbs_sample_L(network_adj_mat=network_adj_mat, params=params_L, 
+    Ls = gibbs_sample_Ls(network_adj_mat=network_adj_mat, params=params_L, 
                         burn_in=burn_in, n_draws=n_simulations,
                         select_every=gibbs_select_every)
 

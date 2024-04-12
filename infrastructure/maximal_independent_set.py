@@ -20,12 +20,12 @@ def get_vertices_within_n_layers(graph, start_vertex, n):
 
     return visited
 
-def maximal_n_apart_independent_set(graph, n, verbose=False):
+def maximal_n_hop_independent_set(network_dict, n, verbose=False):
     """
     Find an n-apart independent set in the graph.
     """
     independent_set = set()
-    active_nodes = set(graph.keys())
+    active_nodes = set(network_dict.keys())
 
     while active_nodes:
         if verbose and len(active_nodes) % 1000 < 2:
@@ -38,7 +38,7 @@ def maximal_n_apart_independent_set(graph, n, verbose=False):
         independent_set.add(current)
 
         # get all vertices within n layers and mark them as inactive
-        to_deactivate = get_vertices_within_n_layers(graph, current, n)
+        to_deactivate = get_vertices_within_n_layers(network_dict, current, n)
         active_nodes.difference_update(to_deactivate)
 
     return independent_set
