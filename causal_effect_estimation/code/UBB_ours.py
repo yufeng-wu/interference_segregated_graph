@@ -12,7 +12,7 @@ def parallel_helper(n_units):
     network_dict, network_adj_mat = create_random_network(n_units, AVG_DEGREE, MAX_NEIGHBORS)
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, 
                          L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
-    # print(np.mean(L), np.mean(A), np.mean(Y))
+    print(np.mean(L), np.mean(A), np.mean(Y))
     return estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, 
                                        burn_in=BURN_IN,
                                        n_simulations=int(N_SIM_MULTIPLIER*n_units), 
@@ -25,6 +25,7 @@ def main():
                                                  burn_in=BURN_IN, 
                                                  n_simulations=int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT),
                                                  gibbs_select_every=GIBBS_SELECT_EVERY)
+    # causal_effect_true = 0
     print("True causal effect:", causal_effect_true)
     
     ''' using autog to estimate causal effects from data generated from UBB '''

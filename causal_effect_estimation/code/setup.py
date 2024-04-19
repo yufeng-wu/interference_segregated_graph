@@ -42,7 +42,7 @@ def GET_TRUE_PARAMS(L_edge_type, A_edge_type, Y_edge_type):
     
     L_TRUE = np.array([-0.3, 0.4]) if L_edge_type == 'U' else np.array([0.2, 3.5, 0.7]) 
     A_TRUE = np.array([5, 4, -2, -1.2]) if A_edge_type == 'U' else np.array([2, 1, 1.3, -0.4, -0.7, 0.2])
-    Y_TRUE = np.array([2, 1, 1.5, -5.3, 1, -4]) if Y_edge_type == 'U' else np.array([0, 1, -3, 0.1, 1, -0.3, 1, 2])
+    Y_TRUE = np.array([2, 1, 1.5, -5.3, 1, -4]) if Y_edge_type == 'U' else np.array([0, 1, -1, 0.1, 1, -0.3, 1, 2])
     
     # L_TRUE = np.array([-0.3, 0.4]) if L_edge_type == 'U' else np.array([0.3, 3.5, 0.7]) 
     # A_TRUE = np.array([0.5, 0.4, 0.2, -0.2]) if A_edge_type == 'U' else np.array([2, 1, 1.3, -0.4, -0.7, 0.2])

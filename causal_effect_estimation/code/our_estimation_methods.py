@@ -2,6 +2,7 @@ import sys
 sys.path.append("../../")
 from infrastructure.maximal_independent_set import maximal_n_hop_independent_set
 from infrastructure.data_generator import *
+from infrastructure.network_utils import kth_order_neighborhood
 from autog_estimation_methods import npll_L
 import pandas as pd
 import numpy as np
@@ -184,12 +185,12 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     Ls = biedge_sample_Ls(network_adj_mat, L_est, n_draws=n_simulations)
     
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
-    model = build_EYi_model(L, A, Y, network_adj_mat)
+    model = build_EYi_model(L, A, Y, network_adj_mat, network_dict)
     
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
-    
+    print("mean:", np.mean(contrasts))
     return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
@@ -220,7 +221,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, burn_in,
                         args=(L, network_adj_mat)).x
    
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
-    model = build_EYi_model(L, A, Y, network_adj_mat)
+    model = build_EYi_model(L, A, Y, network_adj_mat, network_dict)
 
     # 3) use params_L and model to estimate causal effects:
     #   - first, get independent realizations of p(L) using Gibbs sampling
@@ -267,32 +268,42 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
     return contrasts
 
 class CustomLogisticRegression:
-    def __init__(self, L, A, Y, network_adj_mat):
-        self.L = L
-        self.A = A
-        self.Y = Y
-        self.network_adj_mat = network_adj_mat
+    def __init__(self, df):
+        self.df = df
         self.params = self.train()
 
     def train(self):
         # use the custom estimator to estimate the parameters for our 
         # logistic regression model. params_logistic_reg is of size 5.
-        params_logistic_reg = minimize(self._npll_logistic_regression, 
+        params_logistic_reg = minimize(self._nll_logistic_regression, 
                                        x0=np.random.uniform(-1, 1, 6)).x
         return params_logistic_reg
 
-    def _npll_logistic_regression(self, params):
+    def _nll_logistic_regression(self, params):
         pY1 = expit((params[0] + 
-                     params[1]*self.L + 
-                     params[2]*self.A + 
-                     params[3]*(self.L@self.network_adj_mat) + 
-                     params[4]*(self.A@self.network_adj_mat) +
-                     params[5]*np.sum(self.network_adj_mat, axis=1)))
-        pY = self.Y*pY1 + (1-self.Y)*(1-pY1)
+                     params[1]*self.df['l_i'] + 
+                     params[2]*self.df['a_i'] + 
+                     params[3]*self.df['l_j_sum'] + 
+                     params[4]*self.df['a_j_sum'] +
+                     params[5]*self.df['nb_count']))
+        pY = self.df['y_i']*pY1 + (1-self.df['y_i'])*(1-pY1)
         # the expit() function outputs 0.0 when the input is reasonably small, 
         # so we replace 0 with a small const to ensure numerical stability
         pY = np.where(pY == 0, 1e-10, pY)
         return -np.sum(np.log(pY))
+
+    # def _npll_logistic_regression(self, params):
+    #     pY1 = expit((params[0] + 
+    #                  params[1]*self.L + 
+    #                  params[2]*self.A + 
+    #                  params[3]*(self.L@self.network_adj_mat) + 
+    #                  params[4]*(self.A@self.network_adj_mat) +
+    #                  params[5]*np.sum(self.network_adj_mat, axis=1)))
+    #     pY = self.Y*pY1 + (1-self.Y)*(1-pY1)
+    #     # the expit() function outputs 0.0 when the input is reasonably small, 
+    #     # so we replace 0 with a small const to ensure numerical stability
+    #     pY = np.where(pY == 0, 1e-10, pY)
+    #     return -np.sum(np.log(pY))
 
     def predict_proba(self, X):
         # X is a pd.DataFrame with certain columns with dimension n x 4
@@ -306,8 +317,55 @@ class CustomLogisticRegression:
         # return in the same style as that of a sklearn model
         return np.column_stack((1-p1, p1))
 
-def build_EYi_model(L, A, Y, network_adj_mat):
-    return CustomLogisticRegression(L, A, Y, network_adj_mat)
+def biedge_Y_df_builder(network, ind_set, L, A, Y):
+    '''
+    Creates dataframe for causal effect estimation. 
+    
+    Inputs:
+        - network
+        - ind_set: a maximal 1-apart independent set obtained from the network
+        - sample: a single realization (L, A, Y) of the network where L, A, Y 
+                  are vectors of the shape (1, size of network).
+    
+    Return:
+        A pd.DataFrame object that with the following entries for each element 
+        of the ind_set:
+            'i': id of the subject
+            'y_i': the value of Y_i in the network realization
+            'a_i': the value of A_i in the network realization
+            'l_i': the value of L_i in the network realization
+            'l_j_sum': sum of [L_j for j in neighbors of i]
+            'a_j_sum': sum of [A_j for j in neighbors of i]
+    '''
+    data_list = []
+
+    for i in ind_set:
+        l_i = L[i]
+        a_i = A[i]
+        y_i = Y[i]
+
+        # get the neighbors of i as a list
+        N_i = kth_order_neighborhood(network, i, 1)
+
+        data_list.append({
+            'i' : i,
+            'y_i': y_i,
+            'a_i': a_i,
+            'l_i': l_i,
+            'l_j_sum': np.sum([L[j] for j in N_i]),
+            'a_j_sum': np.sum([A[j] for j in N_i]),
+            'nb_count': len(N_i)
+        })
+
+    df = pd.DataFrame(data_list) 
+    return df   
+
+def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
+    
+    ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
+    df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
+    
+    return CustomLogisticRegression(df)
     
     # majority_class = np.argmax(np.bincount(Y))
     # naive_accuracy = np.mean(Y == majority_class)
