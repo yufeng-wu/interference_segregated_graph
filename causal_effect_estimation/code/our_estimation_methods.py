@@ -9,6 +9,7 @@ import numpy as np
 import random
 import networkx as nx
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from scipy.optimize import minimize
 from tqdm import tqdm
 
@@ -409,11 +410,22 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
     df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
 
-    target = df['y_i']
-    features = df.drop(['i', 'y_i'], axis=1) 
+    # target = df['y_i']
+    # features = df.drop(['i', 'y_i'], axis=1) 
 
-    # Retrain the model with the best hyperparameters
-    model = RandomForestClassifier()
+    # # Retrain the model with the best hyperparameters
+    # model = RandomForestClassifier(n_estimators=)
+    # model.fit(features, target)
+    
+    # Assuming df, target, and features are already defined as per your previous code
+    target = df['y_i']
+    features = df.drop(['i', 'y_i'], axis=1)
+
+    # Instantiate the logistic regression model
+    # The 'liblinear' solver is a good choice for small datasets and binary classification
+    model = LogisticRegression(solver='liblinear', class_weight='balanced')
+
+    # Fit the logistic regression model to your data
     model.fit(features, target)
     
     return model
