@@ -12,6 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from scipy.optimize import minimize
 from tqdm import tqdm
+from pygam import LogisticGAM, s, l
 
 def ricf(L1, L2, num_iter, var, max_degree_of_network):
     '''
@@ -270,8 +271,12 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
             feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum', 'nb_count'])
             
             # the two variables below are vectors with n rows
-            pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
-            pred_Y_intervene_A0 = model.predict_proba(feature_vals_0_df)[:, 1]
+            # pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
+            # pred_Y_intervene_A0 = model.predict_proba(feature_vals_0_df)[:, 1]
+            
+            # pygam:
+            pred_Y_intervene_A1 = model.predict_mu(feature_vals_1_df)
+            pred_Y_intervene_A0 = model.predict_mu(feature_vals_0_df)
             
             contrasts.append(pred_Y_intervene_A1 - pred_Y_intervene_A0)
             pbar.update()
@@ -410,25 +415,21 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
     df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
 
-    # target = df['y_i']
-    # features = df.drop(['i', 'y_i'], axis=1) 
-
-    # # Retrain the model with the best hyperparameters
-    # model = RandomForestClassifier(n_estimators=)
-    # model.fit(features, target)
-    
-    # Assuming df, target, and features are already defined as per your previous code
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1)
-
-    # Instantiate the logistic regression model
-    # The 'liblinear' solver is a good choice for small datasets and binary classification
-    model = LogisticRegression(solver='liblinear', class_weight='balanced')
     
-    # random forest classifier
-    # model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=1)
-
-    # Fit the logistic regression model to your data
-    model.fit(features, target)
+    gam = LogisticGAM(s(0) + s(1) + s(2) + s(3) + s(4)).fit(features, target)
     
-    return model
+    # lam_values = np.logspace(-2, 12, 10)
+    
+    # # Execute grid search to find the best lambda values for the model
+    # gam.gridsearch(features.values, target.values, lam=lam_values)
+
+    # # Optionally, check and print the optimal lambda value found
+    # print("Optimal lambda:", gam.lam)
+
+
+    # model = LogisticRegression(solver='liblinear', class_weight='balanced')
+    # model.fit(features, target)
+    
+    return gam
