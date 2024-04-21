@@ -418,18 +418,25 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1)
     
-    gam = LogisticGAM(s(0) + s(1) + s(2) + s(3) + s(4)).fit(features, target)
+    gam = LogisticGAM(s(0) + s(1) + s(2) + s(3) + s(4))
     
-    # lam_values = np.logspace(-2, 12, 10)
+    lam_values = np.logspace(-2, 20, 10)
     
-    # # Execute grid search to find the best lambda values for the model
-    # gam.gridsearch(features.values, target.values, lam=lam_values)
+    # Execute grid search to find the best lambda values for the model
+    gam.gridsearch(features.values, target.values, lam=lam_values)
 
-    # # Optionally, check and print the optimal lambda value found
-    # print("Optimal lambda:", gam.lam)
+    # Optionally, check and print the optimal lambda value found
+    print("Optimal lambda:", gam.lam)
 
+    # Fit the model with the optimal lambda value
+    gam.fit(features, target)
 
-    # model = LogisticRegression(solver='liblinear', class_weight='balanced')
-    # model.fit(features, target)
+    # Predict the target values
+    y_pred = gam.predict(features)
+
+    # Calculate the accuracy of the model
+    accuracy = np.mean(y_pred == target)
+
+    print("Validation Accuracy: ", accuracy)
     
     return gam
