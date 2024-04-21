@@ -424,6 +424,9 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     # Instantiate the logistic regression model
     # The 'liblinear' solver is a good choice for small datasets and binary classification
     model = LogisticRegression(solver='liblinear', class_weight='balanced')
+    
+    # random forest classifier
+    # model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=1)
 
     # Fit the logistic regression model to your data
     model.fit(features, target)
