@@ -198,7 +198,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
-    
+    print("mean: ", np.mean(contrasts))
     return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
@@ -242,6 +242,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, burn_in,
     # each inner list is the estimated individual-level constrast between
     # pred_Y_i_given_intervention_1 - pred_Y_i_given_intervention_0
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
+    
     return np.mean(contrasts)
 
 def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
@@ -278,7 +279,14 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
 class CustomLogisticRegression:
     def __init__(self, df):
         self.df = df
+        # Calculate class weights
+        self.class_weights = self.calculate_class_weights(df['y_i'])
         self.params = self.train()
+
+    def calculate_class_weights(self, y):
+        weight_for_0 = len(y) / (2.0 * np.sum(y == 0))
+        weight_for_1 = len(y) / (2.0 * np.sum(y == 1))
+        return {0: weight_for_0, 1: weight_for_1}
 
     def train(self):
         # use the custom estimator to estimate the parameters for our 
@@ -294,11 +302,21 @@ class CustomLogisticRegression:
                      params[3]*self.df['l_j_sum'] + 
                      params[4]*self.df['a_j_sum'] +
                      params[5]*self.df['nb_count']))
-        pY = self.df['y_i']*pY1 + (1-self.df['y_i'])*(1-pY1)
-        # the expit() function outputs 0.0 when the input is reasonably small, 
-        # so we replace 0 with a small const to ensure numerical stability
-        pY = np.where(pY == 0, 1e-10, pY)
-        return -np.sum(np.log(pY))
+        pY1 = np.clip(pY1, 1e-10, 1 - 1e-10)
+        log_likelihood = self.df['y_i']*np.log(pY1) + (1-self.df['y_i'])*np.log(1-pY1)
+        
+        # Apply class weights
+        weights = self.df['y_i'].replace(self.class_weights)
+        weighted_log_likelihood = weights * log_likelihood
+        
+        # Return the negative sum of the weighted log-likelihood
+        return -np.sum(weighted_log_likelihood)
+    
+        # pY = self.df['y_i']*pY1 + (1-self.df['y_i'])*(1-pY1)
+        # # the expit() function outputs 0.0 when the input is reasonably small, 
+        # # so we replace 0 with a small const to ensure numerical stability
+        # pY = np.where(pY == 0, 1e-10, pY)
+        # return -np.sum(np.log(pY))
 
     # def _npll_logistic_regression(self, params):
     #     pY1 = expit((params[0] + 
@@ -372,7 +390,6 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     
     ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
     df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
-    
     return CustomLogisticRegression(df)
     
     # majority_class = np.argmax(np.bincount(Y))
