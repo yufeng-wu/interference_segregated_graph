@@ -187,10 +187,18 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
     model = build_EYi_model(L, A, Y, network_adj_mat, network_dict)
     
+    # compare raw accuracy vs. model accuracy
+    # majority_class = np.argmax(np.bincount(Y))
+    # naive_accuracy = np.mean(Y == majority_class)
+    
+    # df = biedge_Y_df_builder(network_dict, network_dict.keys(), L, A, Y)
+    # model_accuracy = np.mean((model.predict_proba(df)[:, 1] >0.5) == Y)
+    # print(f"Naive Accuracy: {naive_accuracy:.3f}", f"Model Accuracy: {model_accuracy:.3f}")
+
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
-    print("mean:", np.mean(contrasts))
+    
     return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
@@ -222,7 +230,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, burn_in,
    
     # 2) build a ML model to estimate E[Y_i | A_i, A_Ni, L_i, L_Ni]
     model = build_EYi_model(L, A, Y, network_adj_mat, network_dict)
-
+    
     # 3) use params_L and model to estimate causal effects:
     #   - first, get independent realizations of p(L) using Gibbs sampling
     #     and thin auto-correlation 
