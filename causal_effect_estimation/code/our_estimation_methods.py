@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import random
 import networkx as nx
+from sklearn.ensemble import RandomForestClassifier
 from scipy.optimize import minimize
 from tqdm import tqdm
 
@@ -388,9 +389,9 @@ def biedge_Y_df_builder(network, ind_set, L, A, Y):
 
 def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     
-    ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
-    df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
-    return CustomLogisticRegression(df)
+    # ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
+    # df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
+    # return CustomLogisticRegression(df)
     
     # majority_class = np.argmax(np.bincount(Y))
     # naive_accuracy = np.mean(Y == majority_class)
@@ -405,14 +406,14 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     #print(f"Naive Accuracy: {naive_accuracy:.3f}", f"Model Accuracy: {model_accuracy:.3f}")
 
     # OLD IMPLEMENTATION USING ML
-    # ind_set_1_hop = maximal_n_apart_independent_set(network_dict, n=1)
-    # df = assemble_estimation_df(network_dict, ind_set_1_hop, L, A, Y)
+    ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
+    df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
 
-    # target = df['y_i']
-    # features = df.drop(['i', 'y_i'], axis=1) 
+    target = df['y_i']
+    features = df.drop(['i', 'y_i'], axis=1) 
 
-    # # Retrain the model with the best hyperparameters
-    # model = RandomForestClassifier()
-    # model.fit(features, target)
+    # Retrain the model with the best hyperparameters
+    model = RandomForestClassifier()
+    model.fit(features, target)
     
-    # return model
+    return model
