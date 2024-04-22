@@ -149,8 +149,10 @@ def biedge_sample_Y(network_adj_mat, L, A, params):
     U = np.triu(U) + np.triu(U, 1).T  # make U symmetric
     U = np.where(network_adj_mat == 1, U, 0)  # apply network mask
 
-    pY = expit(params[2] + params[3]*L + params[4]*A + params[5]*(L@network_adj_mat) + 
-               params[6]*(A@network_adj_mat) + params[7]*U.sum(axis=0))
+    pY = expit(params[2] + params[3]*L + params[4]*A + 
+               params[5]*(L@network_adj_mat) + 
+               params[6]*(A@network_adj_mat) + 
+               params[7]*U.sum(axis=0))
     
     Y = np.random.binomial(1, pY)
     return Y

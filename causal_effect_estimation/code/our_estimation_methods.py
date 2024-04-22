@@ -13,6 +13,8 @@ from sklearn.linear_model import LogisticRegression
 from scipy.optimize import minimize
 from tqdm import tqdm
 from pygam import LogisticGAM, s, l
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import StandardScaler
 
 def ricf(L1, L2, num_iter, var, max_degree_of_network):
     '''
@@ -201,7 +203,7 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
-    print("mean: ", np.mean(contrasts))
+    print("difference: ", np.mean(contrasts) - 0.4336644)
     return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
@@ -270,13 +272,16 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
             feature_vals_1_df = pd.DataFrame(feature_vals_1, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum', 'nb_count'])
             feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum', 'nb_count'])
             
-            # the two variables below are vectors with n rows
-            # pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
-            # pred_Y_intervene_A0 = model.predict_proba(feature_vals_0_df)[:, 1]
+            # drop nb
+            feature_vals_1_df = feature_vals_1_df.drop('nb_count', axis=1)
+            feature_vals_0_df = feature_vals_0_df.drop('nb_count', axis=1)
             
+            # the two variables below are vectors with n rows
+            pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
+            pred_Y_intervene_A0 = model.predict_proba(feature_vals_0_df)[:, 1]
             # pygam:
-            pred_Y_intervene_A1 = model.predict_mu(feature_vals_1_df)
-            pred_Y_intervene_A0 = model.predict_mu(feature_vals_0_df)
+            # pred_Y_intervene_A1 = model.predict_mu(feature_vals_1_df)
+            # pred_Y_intervene_A0 = model.predict_mu(feature_vals_0_df)
             
             contrasts.append(pred_Y_intervene_A1 - pred_Y_intervene_A0)
             pbar.update()
@@ -387,7 +392,7 @@ def biedge_Y_df_builder(network, ind_set, L, A, Y):
             'l_i': l_i,
             'l_j_sum': np.sum([L[j] for j in N_i]),
             'a_j_sum': np.sum([A[j] for j in N_i]),
-            'nb_count': len(N_i)
+            # 'nb_count': len(N_i)
         })
 
     df = pd.DataFrame(data_list) 
@@ -417,26 +422,8 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
 
     target = df['y_i']
     features = df.drop(['i', 'y_i'], axis=1)
+
+    model = LogisticRegression(class_weight='balanced')
     
-    gam = LogisticGAM(s(0) + s(1) + s(2) + s(3) + s(4))
-    
-    lam_values = np.logspace(-2, 20, 10)
-    
-    # Execute grid search to find the best lambda values for the model
-    gam.gridsearch(features.values, target.values, lam=lam_values)
-
-    # Optionally, check and print the optimal lambda value found
-    print("Optimal lambda:", gam.lam)
-
-    # Fit the model with the optimal lambda value
-    gam.fit(features, target)
-
-    # Predict the target values
-    y_pred = gam.predict(features)
-
-    # Calculate the accuracy of the model
-    accuracy = np.mean(y_pred == target)
-
-    print("Validation Accuracy: ", accuracy)
-    
-    return gam
+    model.fit(features, target)
+    return model
