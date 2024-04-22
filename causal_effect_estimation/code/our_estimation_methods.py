@@ -203,7 +203,6 @@ def estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y,
     # 3) estimate network causal effects using empirical estimate of p(L)
     #    and model
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
-    print("difference: ", np.mean(contrasts) - 0.4336644)
     return np.mean(contrasts)
 
 def true_causal_effects_U_B(network_adj_mat, params_L, params_Y, burn_in, 
@@ -391,7 +390,7 @@ def biedge_Y_df_builder(network, ind_set, L, A, Y):
             'a_i': a_i,
             'l_i': l_i,
             'l_j_sum': np.sum([L[j] for j in N_i]),
-            'a_j_sum': np.sum([A[j] for j in N_i]),
+            'a_j_sum': np.sum([A[j] for j in N_i])
             # 'nb_count': len(N_i)
         })
 
