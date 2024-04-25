@@ -11,11 +11,12 @@ L_TRUE, A_TRUE, Y_TRUE = GET_TRUE_PARAMS(L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE)
 def main():
     
     ''' evaluate true network causal effects '''
-    _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
-                                               AVG_DEGREE, 
-                                               MAX_NEIGHBORS)
-    causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, 
-                                            BURN_IN, int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT))
+    # _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
+    #                                            AVG_DEGREE, 
+    #                                            MAX_NEIGHBORS)
+    # causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, 
+    #                                         BURN_IN, int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT))
+    causal_effect_true = 0
     print("True causal effect:", causal_effect_true)
     
     ''' using autog to estimate causal effects from data generated from BBU '''
@@ -31,7 +32,7 @@ def main():
     df = pd.DataFrame.from_dict(causal_effect_ests, orient='index').transpose()
     df['True Effect'] = causal_effect_true
     current_file_name = os.path.basename(__file__).split('.')[0]
-    df.to_csv(f"{SAVE_OUTPUT_TO_DIR}{current_file_name}.csv", index=False)
+    df.to_csv(f"{SAVE_OUTPUT_TO_DIR}{current_file_name}_6000.csv", index=False)
 
 if __name__ == "__main__":
     main()
