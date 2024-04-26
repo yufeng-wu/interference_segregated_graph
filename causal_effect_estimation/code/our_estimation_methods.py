@@ -319,7 +319,7 @@ class CustomLogisticRegression:
         
         # Return the negative sum of the weighted log-likelihood
         # return -np.sum(weighted_log_likelihood)
-        return -np.sum(log_likelihood)
+        return -np.mean(log_likelihood) #-np.mean(log_likelihood)
     
         # pY = self.df['y_i']*pY1 + (1-self.df['y_i'])*(1-pY1)
         # # the expit() function outputs 0.0 when the input is reasonably small, 
