@@ -314,11 +314,12 @@ class CustomLogisticRegression:
         log_likelihood = self.df['y_i']*np.log(pY1) + (1-self.df['y_i'])*np.log(1-pY1)
         
         # Apply class weights
-        weights = self.df['y_i'].replace(self.class_weights)
-        weighted_log_likelihood = weights * log_likelihood
+        # weights = self.df['y_i'].replace(self.class_weights)
+        # weighted_log_likelihood = weights * log_likelihood
         
         # Return the negative sum of the weighted log-likelihood
-        return -np.sum(weighted_log_likelihood)
+        # return -np.sum(weighted_log_likelihood)
+        return -np.sum(log_likelihood)
     
         # pY = self.df['y_i']*pY1 + (1-self.df['y_i'])*(1-pY1)
         # # the expit() function outputs 0.0 when the input is reasonably small, 
