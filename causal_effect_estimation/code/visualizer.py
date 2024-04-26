@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "combined_dataset"
+filename = "UBB_ours_custom_logreg"
 
 df = pd.read_csv(f'../result/raw_output/{filename}.csv')
 n_samples = [int(column_name.split()[2]) for column_name in df.columns if 'n units' in column_name]
