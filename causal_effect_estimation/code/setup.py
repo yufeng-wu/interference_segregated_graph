@@ -13,7 +13,7 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # the common set up of my tests
-TRUE_CAUSAL_EFFECT_N_UNIT = 5000
+TRUE_CAUSAL_EFFECT_N_UNIT = 6000
 AVG_DEGREE = 5
 MAX_NEIGHBORS = 10
 N_UNITS_LIST = [6000]#[500, 1000, 2000, 3000, 4000, 5000]

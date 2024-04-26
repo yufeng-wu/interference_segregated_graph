@@ -272,8 +272,8 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
             feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum', 'nb_count'])
             
             # drop nb
-            feature_vals_1_df = feature_vals_1_df.drop('nb_count', axis=1)
-            feature_vals_0_df = feature_vals_0_df.drop('nb_count', axis=1)
+            # feature_vals_1_df = feature_vals_1_df.drop('nb_count', axis=1)
+            # feature_vals_0_df = feature_vals_0_df.drop('nb_count', axis=1)
             
             # the two variables below are vectors with n rows
             pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
@@ -390,8 +390,8 @@ def biedge_Y_df_builder(network, ind_set, L, A, Y):
             'a_i': a_i,
             'l_i': l_i,
             'l_j_sum': np.sum([L[j] for j in N_i]),
-            'a_j_sum': np.sum([A[j] for j in N_i])
-            # 'nb_count': len(N_i)
+            'a_j_sum': np.sum([A[j] for j in N_i]),
+            'nb_count': len(N_i)
         })
 
     df = pd.DataFrame(data_list) 

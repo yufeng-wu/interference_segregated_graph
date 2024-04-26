@@ -54,7 +54,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "UUB"
+filename = "UBB"
 
 # Read data from CSV files
 df_ours = pd.read_csv(f'../result/raw_output/{filename}_ours.csv')

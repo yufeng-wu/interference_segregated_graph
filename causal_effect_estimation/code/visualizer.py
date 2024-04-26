@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "UBU_autog"
+filename = "UBB_ours"
 
 df = pd.read_csv(f'../result/raw_output/{filename}.csv')
 n_samples = [int(column_name.split()[2]) for column_name in df.columns if 'n units' in column_name]
