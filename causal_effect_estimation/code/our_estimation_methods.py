@@ -246,7 +246,7 @@ def estimate_causal_effects_U_B(network_dict, network_adj_mat, L, A, Y, burn_in,
     # each inner list is the estimated individual-level constrast between
     # pred_Y_i_given_intervention_1 - pred_Y_i_given_intervention_0
     contrasts = estimate_causal_effect_biedge_Y_helper(network_dict, model, Ls)
-    
+    print("CE: ", np.mean(contrasts))
     return np.mean(contrasts)
 
 def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
@@ -272,15 +272,12 @@ def estimate_causal_effect_biedge_Y_helper(network_dict, model, L_draws):
             feature_vals_0_df = pd.DataFrame(feature_vals_0, columns=['a_i', 'l_i', 'l_j_sum', 'a_j_sum', 'nb_count'])
             
             # drop nb
-            # feature_vals_1_df = feature_vals_1_df.drop('nb_count', axis=1)
-            # feature_vals_0_df = feature_vals_0_df.drop('nb_count', axis=1)
+            feature_vals_1_df = feature_vals_1_df.drop('nb_count', axis=1)
+            feature_vals_0_df = feature_vals_0_df.drop('nb_count', axis=1)
             
             # the two variables below are vectors with n rows
             pred_Y_intervene_A1 = model.predict_proba(feature_vals_1_df)[:, 1]
             pred_Y_intervene_A0 = model.predict_proba(feature_vals_0_df)[:, 1]
-            # pygam:
-            # pred_Y_intervene_A1 = model.predict_mu(feature_vals_1_df)
-            # pred_Y_intervene_A0 = model.predict_mu(feature_vals_0_df)
             
             contrasts.append(pred_Y_intervene_A1 - pred_Y_intervene_A0)
             pbar.update()
@@ -303,16 +300,16 @@ class CustomLogisticRegression:
         # use the custom estimator to estimate the parameters for our 
         # logistic regression model. params_logistic_reg is of size 5.
         params_logistic_reg = minimize(self._nll_logistic_regression, 
-                                       x0=np.random.uniform(-1, 1, 6)).x
+                                       x0=np.random.uniform(-1, 1, 5)).x
         return params_logistic_reg
 
     def _nll_logistic_regression(self, params):
-        pY1 = expit((params[0] + 
-                     params[1]*self.df['l_i'] + 
-                     params[2]*self.df['a_i'] + 
-                     params[3]*self.df['l_j_sum'] + 
-                     params[4]*self.df['a_j_sum'] +
-                     params[5]*self.df['nb_count']))
+        pY1 = expit(params[0] + 
+                    params[1]*self.df['l_i'] + 
+                    params[2]*self.df['a_i'] + 
+                    params[3]*self.df['l_j_sum'] + 
+                    params[4]*self.df['a_j_sum'])
+                    #  params[5]*self.df['nb_count']))
         pY1 = np.clip(pY1, 1e-10, 1 - 1e-10)
         log_likelihood = self.df['y_i']*np.log(pY1) + (1-self.df['y_i'])*np.log(1-pY1)
         
@@ -349,8 +346,8 @@ class CustomLogisticRegression:
                    self.params[1]*X['l_i'] + 
                    self.params[2]*X['a_i'] + 
                    self.params[3]*X['l_j_sum'] + 
-                   self.params[4]*X['a_j_sum'] +
-                   self.params[5]*X['nb_count'])
+                   self.params[4]*X['a_j_sum'])
+                #    self.params[5]*X['nb_count'])
         # return in the same style as that of a sklearn model
         return np.column_stack((1-p1, p1))
 
@@ -391,7 +388,7 @@ def biedge_Y_df_builder(network, ind_set, L, A, Y):
             'l_i': l_i,
             'l_j_sum': np.sum([L[j] for j in N_i]),
             'a_j_sum': np.sum([A[j] for j in N_i]),
-            'nb_count': len(N_i)
+            # 'nb_count': len(N_i)
         })
 
     df = pd.DataFrame(data_list) 
@@ -399,9 +396,9 @@ def biedge_Y_df_builder(network, ind_set, L, A, Y):
 
 def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     
-    # ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
-    # df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
-    # return CustomLogisticRegression(df)
+    ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
+    df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
+    return CustomLogisticRegression(df)
     
     # majority_class = np.argmax(np.bincount(Y))
     # naive_accuracy = np.mean(Y == majority_class)
@@ -416,13 +413,13 @@ def build_EYi_model(L, A, Y, network_adj_mat, network_dict):
     #print(f"Naive Accuracy: {naive_accuracy:.3f}", f"Model Accuracy: {model_accuracy:.3f}")
 
     # OLD IMPLEMENTATION USING ML
-    ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
-    df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
+    # ind_set_1_hop = maximal_n_hop_independent_set(network_dict, n=1)
+    # df = biedge_Y_df_builder(network_dict, ind_set_1_hop, L, A, Y)
 
-    target = df['y_i']
-    features = df.drop(['i', 'y_i'], axis=1)
+    # target = df['y_i']
+    # features = df.drop(['i', 'y_i'], axis=1)
 
-    model = LogisticRegression(class_weight='balanced')
+    # model = LogisticRegression(class_weight='balanced')
     
-    model.fit(features, target)
-    return model
+    # model.fit(features, target)
+    # return model

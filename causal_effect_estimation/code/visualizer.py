@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "UBB_ours"
+filename = "combined_dataset"
 
 df = pd.read_csv(f'../result/raw_output/{filename}.csv')
 n_samples = [int(column_name.split()[2]) for column_name in df.columns if 'n units' in column_name]
@@ -16,7 +16,8 @@ for n_sample in n_samples:
     plt.boxplot(df[f'n units {n_sample}'], positions=[n_sample], widths=200, showfliers=True)
 
 # add a line for the true causal effect
-plt.axhline(y=df['True Effect'][0], color='r', linestyle='--')
+true_effect = 0.449# df['True Effect'][0]
+plt.axhline(y=true_effect, color='r', linestyle='--')
 
 # plt.ylim(0, 0.5)
 plt.xlabel('Number of units')
