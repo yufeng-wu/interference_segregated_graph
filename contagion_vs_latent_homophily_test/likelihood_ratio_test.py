@@ -113,8 +113,8 @@ if __name__ == "__main__":
     ''' Set up '''
     # Set a new recursion limit
     sys.setrecursionlimit(4000)
-    n_units_list = [100, 200, 500, 1000, 1500, 2000]
-    n_trials = 100 # number of trials to run for each n_units
+    n_units_list = [200, 500, 1000, 1500, 2000, 2500]
+    n_trials = 200 # number of trials to run for each n_units
     
     # read in exisitng data
     with open('./data/binary_sample/network.pkl', 'rb') as file:
