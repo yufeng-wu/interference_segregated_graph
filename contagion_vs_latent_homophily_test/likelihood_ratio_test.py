@@ -79,18 +79,18 @@ def prepare_test_df(sample, network_dict, ind_set_5_hop):
         third_order_nbs = kth_order_neighborhood(network_dict, i, 3)
         
         L_vals.append(sample['L'][i])
-        L_1nb_vals.append([sample['L'][i] for i in neighbors])
-        L_2nb_vals.append([sample['L'][i] for i in second_order_nbs])
-        L_3nb_vals.append([sample['L'][i] for i in third_order_nbs])
+        L_1nb_vals.append([sample['L'][j] for j in neighbors])
+        L_2nb_vals.append([sample['L'][j] for j in second_order_nbs])
+        L_3nb_vals.append([sample['L'][j] for j in third_order_nbs])
         
         A_vals.append(sample['A'][i])
-        A_1nb_vals.append([sample['A'][i] for i in neighbors])
-        A_2nb_vals.append([sample['A'][i] for i in second_order_nbs])
-        A_3nb_vals.append([sample['A'][i] for i in third_order_nbs])
+        A_1nb_vals.append([sample['A'][j] for j in neighbors])
+        A_2nb_vals.append([sample['A'][j] for j in second_order_nbs])
+        A_3nb_vals.append([sample['A'][j] for j in third_order_nbs])
         
         Y_vals.append(sample['Y'][i])
-        Y_1nb_vals.append([sample['Y'][i] for i in neighbors])
-        Y_2nb_vals.append([sample['Y'][i] for i in second_order_nbs])
+        Y_1nb_vals.append([sample['Y'][j] for j in neighbors])
+        Y_2nb_vals.append([sample['Y'][j] for j in second_order_nbs])
 
     df = pd.DataFrame({
         'L': L_vals,
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     # Set a new recursion limit
     sys.setrecursionlimit(4000)
     n_units_list = [200, 500, 1000, 2000, 3000, 4000]
-    n_trials = 200 # number of trials to run for each n_units
+    n_trials = 500 # number of trials to run for each n_units
     
     # read in exisitng data
     with open('./data/binary_sample/network.pkl', 'rb') as file:
@@ -154,30 +154,30 @@ if __name__ == "__main__":
             UUU_test_df = prepare_test_df(UUU_sample, network_dict, ind_set_5_hop)
             
             # p-value of L layer test when the true model have bidirected edges (<->)
-            p_value_L_biedge = likelihood_ratio_test(data=BBB_test_df, 
-                                                     Y="L", 
-                                                     Z_set=["L_2nb_sum"], 
-                                                     cond_set=["L_1nb_sum"],
-                                                     Y_type="binary")
-            # p-value of L layer test when the true model have undirected edges (-)
-            p_value_L_udedge = likelihood_ratio_test(data=UUU_test_df, 
-                                                     Y="L", 
-                                                     Z_set=["L_2nb_sum"], 
-                                                     cond_set=["L_1nb_sum"],
-                                                     Y_type="binary")
+            # p_value_L_biedge = likelihood_ratio_test(data=BBB_test_df, 
+            #                                          Y="L", 
+            #                                          Z_set=["L_2nb_sum"], 
+            #                                          cond_set=["L_1nb_sum"],
+            #                                          Y_type="binary")
+            # # p-value of L layer test when the true model have undirected edges (-)
+            # p_value_L_udedge = likelihood_ratio_test(data=UUU_test_df, 
+            #                                          Y="L", 
+            #                                          Z_set=["L_2nb_sum"], 
+            #                                          cond_set=["L_1nb_sum"],
+            #                                          Y_type="binary")
             
-            # p-value of A layer test when the true model have bidirected edges (<->)
-            p_value_A_biedge = likelihood_ratio_test(data=BBB_test_df, 
-                                                     Y="A", 
-                                                     Z_set=["L_3nb_sum", "A_2nb_sum"], 
-                                                     cond_set=["A_1nb_sum", "L", "L_1nb_sum", "L_2nb_sum"],
-                                                     Y_type="binary")
-            # p-value of A layer test when the true model have undirected edges (-)
-            p_value_A_udedge = likelihood_ratio_test(data=UUU_test_df, 
-                                                     Y="A", 
-                                                     Z_set=["L_3nb_sum", "A_2nb_sum"], 
-                                                     cond_set=["A_1nb_sum", "L", "L_1nb_sum", "L_2nb_sum"],
-                                                     Y_type="binary")
+            # # p-value of A layer test when the true model have bidirected edges (<->)
+            # p_value_A_biedge = likelihood_ratio_test(data=BBB_test_df, 
+            #                                          Y="A", 
+            #                                          Z_set=["L_3nb_sum", "A_2nb_sum"], 
+            #                                          cond_set=["A_1nb_sum", "L", "L_1nb_sum", "L_2nb_sum"],
+            #                                          Y_type="binary")
+            # # p-value of A layer test when the true model have undirected edges (-)
+            # p_value_A_udedge = likelihood_ratio_test(data=UUU_test_df, 
+            #                                          Y="A", 
+            #                                          Z_set=["L_3nb_sum", "A_2nb_sum"], 
+            #                                          cond_set=["A_1nb_sum", "L", "L_1nb_sum", "L_2nb_sum"],
+            #                                          Y_type="binary")
             
             # p-value of Y layer test when the true model have bidirected edges (<->)
             p_value_Y_biedge = likelihood_ratio_test(data=BBB_test_df, 
@@ -193,31 +193,31 @@ if __name__ == "__main__":
                                                      Y_type="binary")
             
             # determine whether the test draws the correct conclusion
-            pred_correct_when_L_biedge.append(p_value_L_biedge < 0.05)
-            pred_correct_when_L_udedge.append(p_value_L_udedge >= 0.05)
+            # pred_correct_when_L_biedge.append(p_value_L_biedge < 0.05)
+            # pred_correct_when_L_udedge.append(p_value_L_udedge >= 0.05)
             
-            pred_correct_when_A_biedge.append(p_value_A_biedge < 0.05)
-            pred_correct_when_A_udedge.append(p_value_A_udedge >= 0.05)
+            # pred_correct_when_A_biedge.append(p_value_A_biedge < 0.05)
+            # pred_correct_when_A_udedge.append(p_value_A_udedge >= 0.05)
             
             pred_correct_when_Y_biedge.append(p_value_Y_biedge < 0.05)
             pred_correct_when_Y_udedge.append(p_value_Y_udedge >= 0.05)
             
         # calculate type I error rates and power for the L, A, Y layers
-        type_I_L = 1 - np.mean(pred_correct_when_L_udedge)
-        power_L = np.mean(pred_correct_when_L_biedge)
+        # type_I_L = 1 - np.mean(pred_correct_when_L_udedge)
+        # power_L = np.mean(pred_correct_when_L_biedge)
         
-        type_I_A = 1 - np.mean(pred_correct_when_A_udedge)
-        power_A = np.mean(pred_correct_when_A_biedge)
+        # type_I_A = 1 - np.mean(pred_correct_when_A_udedge)
+        # power_A = np.mean(pred_correct_when_A_biedge)
         
         type_I_Y = 1 - np.mean(pred_correct_when_Y_udedge)
         power_Y = np.mean(pred_correct_when_Y_biedge)
         
         # store the results into dataframes
-        L_results = pd.concat([L_results, pd.DataFrame({"n_units": [n_units], "type_I_error_rate": [type_I_L], "power": [power_L]})], ignore_index=True)
-        A_results = pd.concat([A_results, pd.DataFrame({"n_units": [n_units], "type_I_error_rate": [type_I_A], "power": [power_A]})], ignore_index=True)
+        # L_results = pd.concat([L_results, pd.DataFrame({"n_units": [n_units], "type_I_error_rate": [type_I_L], "power": [power_L]})], ignore_index=True)
+        # A_results = pd.concat([A_results, pd.DataFrame({"n_units": [n_units], "type_I_error_rate": [type_I_A], "power": [power_A]})], ignore_index=True)
         Y_results = pd.concat([Y_results, pd.DataFrame({"n_units": [n_units], "type_I_error_rate": [type_I_Y], "power": [power_Y]})], ignore_index=True)
     
     # save the results as csv files
-    L_results.to_csv('./result/L_results.csv', index=False)
-    A_results.to_csv('./result/A_results.csv', index=False)
+    # L_results.to_csv('./result/L_results.csv', index=False)
+    # A_results.to_csv('./result/A_results.csv', index=False)
     Y_results.to_csv('./result/Y_results.csv', index=False)
