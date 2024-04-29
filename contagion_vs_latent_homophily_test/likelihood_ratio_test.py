@@ -113,7 +113,7 @@ if __name__ == "__main__":
     ''' Set up '''
     # Set a new recursion limit
     sys.setrecursionlimit(4000)
-    n_units_list = [3000, 5000, 7000, 9000, 11000]
+    n_units_list = [6000, 7000]
     n_trials = 200 # number of trials to run for each n_units
     
     # read in exisitng data
