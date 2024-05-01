@@ -163,7 +163,7 @@ def main():
     burn_in = 200
     network_dict, _ = create_random_network(n_units, avg_degree, max_degree)
     ind_set = maximal_n_hop_independent_set(network_dict, n=5, verbose=False)
-    
+    print("Number of nodes in the independent set: ", len(ind_set))
     # save the network and ind_set
     with open("network.pkl", "wb") as file:
         pickle.dump(network_dict, file)
