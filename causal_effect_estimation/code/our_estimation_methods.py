@@ -11,6 +11,92 @@ import networkx as nx
 from scipy.optimize import minimize
 from tqdm import tqdm
 
+# TODO: 
+# def ricf_with_param_sharing(L1, L2, var, num_iter):
+#     '''
+#     RICF stands for Residual Iterative Conditional Fitting, a method
+#     from the paper "Computing maximum likelihood estimates in recursive 
+#     linear models with correlated errors" by Drton, Eichler, and Richardson.
+#     RICF is used to estimate the covariance matrix of a graphical model 
+#     that specifies a multivariate normal distribution.
+    
+#     This function estimates the covariance matrix of the joint distribution
+#     L1 <-> L2, which is assumed to be generated from a multivariate normal
+#     distribution.
+    
+#     Args:
+#         L1: a list of n independent realizations of L1.
+#         L2: a list of n independent realizations of L2.
+#         max_iter: number of iterations to run the optimization.
+#         var: the estimated, shared variance of L1 and L2. var(L1) = var(L2)
+#             is by assumption.
+#         max_degree_of_network: largest degree among all vertices in the network.
+#             We need this information to ensure diagonal dominance throughout 
+#             the optimization process, which is a sufficient condition for the 
+#             positive definiteness of the estimated covariance matrix.
+    
+#     Returns:
+#         A 2x2 numpy array representing the estimated covariance matrix of the
+#         joint distribution L1 <-> L2.
+#     '''
+
+#     def least_squares_loss(params, L, Z, var_index):
+#         n, _ = L.shape
+#         return 0.5 / n * np.linalg.norm(L[:, var_index] - np.dot(Z, params)) ** 2
+        
+#     d = 2 # number of variables in the graphical model for RICF estimates
+#     eps_L1 = L1 - np.mean(L1)
+#     eps_L2 = L2 - np.mean(L2)
+
+#     L_df = pd.DataFrame({'L1': eps_L1, 'L2': eps_L2})
+
+#     # Start with empirical covariance matrix
+#     cov_mat = np.cov(L_df.T)
+
+#     for _ in range(num_iter):
+#         for var_index in [0, 1]:
+#             omega = cov_mat.copy()
+#             omega_minusi = np.delete(omega, var_index, axis=0)
+#             omega_minusii = np.delete(omega_minusi, var_index, axis=1)
+#             omega_minusii_inv = np.linalg.inv(omega_minusii)
+
+#             epsilon = L_df.values
+#             epsilon_minusi = np.delete(epsilon, var_index, axis=1)
+
+#             Z_minusi = epsilon_minusi @ omega_minusii_inv.T
+#             Z = np.insert(Z_minusi, var_index, 0, axis=1)
+            
+#             # getting the solution from five random initializations
+#             # and pick the one with the smallest loss
+#             best_solution = None
+#             best_loss = np.inf
+#             for _ in range(5):
+#                 # minimize by first setting a random start within the bounds
+#                 sol = minimize(least_squares_loss, 
+#                                x0=np.random.uniform(0, 1, size=d),
+#                                args=(L_df.values, Z, var_index),
+#                                method='L-BFGS-B')
+#                 if sol.fun < best_loss:
+#                     best_loss = sol.fun
+#                     best_solution = sol
+#             best_params = best_solution.x
+#             # update covariance matrix according to the best solution
+            
+#             # Update the cov_mat with the best solution
+#             cov_mat[var_index, :] = cov_mat[:, var_index] = best_params
+#             cov_mat[0, 0] = cov_mat[1, 1] = var
+#             # Update the variance based on the equation (23) in the paper
+#             # if var_index == 0:
+#             #     lambda_1 = np.mean((L_df.values[:, 0] - best_params[1] * L_df.values[:, 1]) ** 2)
+#             #     cov_mat[0, 0] = lambda_1 + best_params[1] ** 2 * omega_minusii_inv[0, 0]
+#             # else:
+#             #     lambda_2 = np.mean((L_df.values[:, 1] - best_params[0] * L_df.values[:, 0]) ** 2)
+#             #     cov_mat[1, 1] = lambda_2 + best_params[0] ** 2 * omega_minusii_inv[0, 0]
+            
+#             print(cov_mat, "\n")
+    
+#     return cov_mat
+
 def ricf(L1, L2, num_iter, var, max_degree_of_network):
     '''
     RICF stands for Residual Iterative Conditional Fitting, a method
@@ -50,15 +136,12 @@ def ricf(L1, L2, num_iter, var, max_degree_of_network):
     L_df = pd.DataFrame({'L1': eps_L1, 'L2': eps_L2})
 
     # random guess for cov mat
-    cov_mat = np.array([[0.0, 0.0],
-                        [0.0, 0.0]])
-
-    var_mat = np.array([[var, 0.0],
+    cov_mat = np.array([[var, 0.0],
                         [0.0, var]])
 
     for _ in range(num_iter):
         for var_index in [0, 1]:
-            omega = cov_mat + var_mat
+            omega = cov_mat.copy()
             omega_minusi = np.delete(omega, var_index, axis=0)
             omega_minusii = np.delete(omega_minusi, var_index, axis=1)
             omega_minusii_inv = np.linalg.inv(omega_minusii)
@@ -69,8 +152,10 @@ def ricf(L1, L2, num_iter, var, max_degree_of_network):
             Z_minusi = epsilon_minusi @ omega_minusii_inv.T
             Z = np.insert(Z_minusi, var_index, 0, axis=1)
             
-            # bounds are to ensure positive definiteness, and we also add/minus 
-            # a small constant in case the rounding goes the wrong way
+            # bounds are to ensure positive definiteness of the covariance matrix 
+            # of the MVN that specify the joint distribution of p(L), 
+            # and we also add/minus a small constant in case the rounding goes 
+            # the wrong way
             bound = (-var/float(max_degree_of_network) + 1e-10, 
                       var/float(max_degree_of_network) - 1e-10)
             
@@ -93,7 +178,8 @@ def ricf(L1, L2, num_iter, var, max_degree_of_network):
             cov_mat[:, var_index] = cov_mat[var_index, :] = best_solution.x
             
             # this is a trivial update for graphs with only bidirected edges
-            var_mat[var_index, var_index] = var 
+            cov_mat[0, 0] = cov_mat[1, 1] = var
+            print(cov_mat, "\n")
 
     return cov_mat
 
@@ -143,6 +229,8 @@ def estimate_biedge_L_params(network_dict, L, max_degree_of_network):
             L1.append(L[v2])
             L2.append(L[v1])
     
+    # TODO: testing! 
+    # est_cov_mat = ricf_with_param_sharing(L1, L2, var=est_var, num_iter=100)
     est_cov_mat = ricf(L1, L2, num_iter=20, var=est_var, max_degree_of_network=max_degree_of_network)
     est_cov = est_cov_mat[0][1] # get the covariance between Li and Lj
     # est_cov = np.cov(L1, L2)[0][1]
