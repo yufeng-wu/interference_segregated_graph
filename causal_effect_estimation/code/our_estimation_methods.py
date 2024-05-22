@@ -8,13 +8,8 @@ import pandas as pd
 import numpy as np
 import random
 import networkx as nx
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
 from scipy.optimize import minimize
 from tqdm import tqdm
-from pygam import LogisticGAM, s, l
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import StandardScaler
 
 def ricf(L1, L2, num_iter, var, max_degree_of_network):
     '''

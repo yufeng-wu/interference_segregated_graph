@@ -384,7 +384,7 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
                             params[4]*np.dot(As, network_adj_mat[i, :])
                             for i in range(len(network_adj_mat))]
 
-    # keep sampling an Y vector till burn in is done
+    # keep sampling a Y vector till burn in is done
     with tqdm(total=burn_in*len(network_adj_mat), desc="Sampling progress") as pbar:
         for m in range(burn_in):
             for i in range(len(network_adj_mat)):    
@@ -395,8 +395,6 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
                 Ys[:, i] = np.random.binomial(1, pYi_given_rest)
                 pbar.update(1)
     return Ys
-
-
 
 # TODO: below is the original data generator code for contagion_vs_latent_homophily tests
 #       which might be still useful.
@@ -595,26 +593,25 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
 #     noise = np.random.normal(0, 1)
 #     return weighted_sum + noise
 
-# def f_binary(pa_values):
-#     weighted_sum = 0
-#     weights = {
-#         'U_values': 5,
-#         'L_self': 0.2,
-#         'A_self': -0.3,
-#         'L_neighbors': 0.1,
-#         'A_neighbors': -0.2
-#     }
+def f_binary(pa_values):
+    weighted_sum = 0
+    weights = {
+        'U_values': 5,
+        'L_self': 0.2,
+        'A_self': -0.3,
+        'L_neighbors': 0.1,
+        'A_neighbors': -0.2
+    }
 
-#     for key, values in pa_values.items():
-#         if values is not None and values != []:
-#             if isinstance(values, list):
-#                 weighted_sum += weights[key] * sum(values)
-#             else:
-#                 weighted_sum += weights[key] * values
+    for key, values in pa_values.items():
+        if values is not None and values != []:
+            if isinstance(values, list):
+                weighted_sum += weights[key] * sum(values)
+            else:
+                weighted_sum += weights[key] * values
     
-#     noise = np.random.normal(0, 1)
-#     p = expit(weighted_sum + noise)
-#     return int(np.random.uniform() < p)
+    p = expit(weighted_sum)
+    return int(np.random.uniform() < p)
 
 # def prob_v_given_boundary_1(boundary_values):
 #     weighted_sum = 0
@@ -692,27 +689,26 @@ def gibbs_sample_Ys(network_adj_mat, Ls, As, params, burn_in=200):
 #     return weighted_sum + np.random.normal(0, 1)
 
 
-# def sample_given_boundary_binary(boundary_values):
-#     '''
-#     Note: This can't be any random function. 
-#           Check Lauritzen chain graph paper page 342.
-#     '''
-#     weighted_sum = 0
-#     weights = {
-#         'Y_neighbors': -0.1, # this need to be controlled
-#         'L_self': 0.8,
-#         'A_self': 1.7,
-#         'L_neighbors': -0.1, # this need to be controlled
-#         'A_neighbors': -0.1 # this need to be controlled
-#     }
+def sample_given_boundary_binary(boundary_values):
+    ''' 
+    Note: This can't be any random function. 
+          Check Lauritzen chain graph paper page 342.
+    '''
+    weighted_sum = 0
+    weights = {
+        'Y_neighbors': -0.1, # this need to be controlled
+        'L_self': 0.8,
+        'A_self': 1.7,
+        'L_neighbors': -0.1, # this need to be controlled
+        'A_neighbors': -0.1 # this need to be controlled
+    }
     
-#     for key, values in boundary_values.items():
-#         if values is not None and values != []:
-#             if isinstance(values, list):
-#                 weighted_sum += weights[key] * sum(values)
-#             else:
-#                 weighted_sum += weights[key] * values
+    for key, values in boundary_values.items():
+        if values is not None and values != []:
+            if isinstance(values, list):
+                weighted_sum += weights[key] * sum(values)
+            else:
+                weighted_sum += weights[key] * values
 
-#     noise = np.random.normal(0, 0.1)
-#     p = expit(weighted_sum + noise)
-#     return int(np.random.uniform() < p)
+    p = expit(weighted_sum)
+    return int(np.random.uniform() < p)
