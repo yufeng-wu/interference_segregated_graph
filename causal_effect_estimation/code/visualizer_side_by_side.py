@@ -1,10 +1,15 @@
+'''
+Visualize two plots side by side, one using our method and another using autog. 
+E.g. when filename is set to "BUU", this code creates a plot that compares
+the results of using our method vs. using autog on data generated from the following
+set up: L layer is bidirected, A layer is undirected, and Y layer is undirected.
+'''
+
 import pandas as pd
 import numpy as np
-
 import matplotlib.pyplot as plt
 
 filename = "BUU"
-
 fontsize = 14
 
 # Read data from CSV files
