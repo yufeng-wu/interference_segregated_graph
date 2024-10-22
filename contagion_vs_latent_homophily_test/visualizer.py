@@ -5,9 +5,9 @@ import pandas as pd
 import numpy as np
 
 # Read in data
-data_l = pd.read_csv('./result/L_results.csv')
-data_a = pd.read_csv('./result/A_results.csv')
-data_y = pd.read_csv('./result/Y_results.csv')
+data_l = pd.read_csv('./result/L_results_layer_only.csv')
+data_a = pd.read_csv('./result/A_results_layer_only.csv')
+data_y = pd.read_csv('./result/Y_results_layer_only.csv')
 
 # Convert dictionaries to DataFrames
 df_l = pd.DataFrame(data_l)
@@ -43,4 +43,4 @@ axes[2].set_ylabel('Rate', fontsize=fontsize)
 
 axes[2].legend(fontsize=fontsize, loc='center', bbox_to_anchor=(0.8, 0.5))
 
-plt.savefig('./result/plot/combined_test_result.png')
+plt.savefig('./result/plot/combined_test_result_layer_only.png')
