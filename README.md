@@ -17,9 +17,9 @@ for verifying the correctness of our estimation strategies as well as demonstrat
     - `raw_output/`: raw outputs in csv format from running `{XYZ}_ours.py` and `{XYZ}_autog.py`.
     - `plot`: visualizations of the csv files in `raw_output/`, produced by `visualizer.py`.
 
-`contagion_vs_latent_homophily_test/`: directory that contains code, data, and results for verifying the correctness of our proposed independence tests that distinguishes contagion (represented by an undirected edge, -) and latent homophily (represented by a bidirected edge, <->) across the L, A, and Y layers of the graphical model.
+`contagion_vs_latent_confounding_test/`: directory that contains code, data, and results for verifying the correctness of our proposed independence tests that distinguishes contagion (represented by an undirected edge, -) and latent confounding (represented by a bidirected edge, <->) across the L, A, and Y layers of the graphical model.
 
-`infrastructure/`: directory that contains the utility code that is shared by code in `causal_effect_estimation/` and `contagion_vs_latent_homophily_test/`.
+`infrastructure/`: directory that contains the utility code that is shared by code in `causal_effect_estimation/` and `contagion_vs_latent_confounding_test/`.
 -   `data_generator.py`: methods for generating network realizations.
 -   `maximal_independence_set.py`: methods for finding n-hop maximal independence sets from a network. 
 -   `network_utils.py`: methods for creating random networks and process these graphs (e.g. finding the kth-order neighborhood of a node). 
