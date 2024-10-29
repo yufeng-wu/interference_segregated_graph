@@ -17,7 +17,6 @@ def main():
                                                  burn_in=BURN_IN,
                                                  n_simulations=int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT),
                                                  gibbs_select_every=GIBBS_SELECT_EVERY)
-    print("True causal effect:", causal_effect_true)
     
     ''' using autog to estimate causal effects from data generated from UUB '''
     causal_effect_ests = {}

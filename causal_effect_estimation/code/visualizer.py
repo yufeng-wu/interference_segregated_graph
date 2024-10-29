@@ -2,7 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "UBU_autog"
+# edit this to the filename of the data you want to visualize
+filename = "UBU_autog" 
 
 fontsize = 14 # font size of the axis and title
 
@@ -12,7 +13,7 @@ name, _ = filename.split('_')
 
 plt.figure(figsize=(10, 6))
 for n_sample in n_samples:
-    # add some jitter
+    # Option to add some jitter and plot the data points
     x_vals = np.random.normal(n_sample, 100, len(df[f'n units {n_sample}']))
     # plt.plot(x_vals, df[f'n units {n_sample}'], 'ro', markersize=2, alpha=0.3)
     

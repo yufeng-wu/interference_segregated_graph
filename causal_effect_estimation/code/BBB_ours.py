@@ -14,7 +14,7 @@ def parallel_helper(n_units):
     # note: the parameter burn_in won't be used since all layers are bidirected.
     L, A, Y = sample_LAY(network_adj_mat, L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE, 
                          L_TRUE, A_TRUE, Y_TRUE, BURN_IN)
-    # print(np.mean(L), np.mean(A), np.mean(Y))
+    
     return estimate_causal_effects_B_B(network_dict, network_adj_mat, L, A, Y, 
                                        MAX_NEIGHBORS, int(N_SIM_MULTIPLIER*n_units))
         
@@ -24,9 +24,6 @@ def main():
     _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE, MAX_NEIGHBORS)
     causal_effect_true = true_causal_effects_B_B(network_adj_mat, L_TRUE, Y_TRUE,
                                                   int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT))
-
-    print("True causal effect:", causal_effect_true)
-    # causal_effect_true = 0.4336644
     
     ''' using autog to estimate causal effects from data generated from BBB '''
     causal_effect_ests = {}

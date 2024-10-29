@@ -10,13 +10,11 @@ L_TRUE, A_TRUE, Y_TRUE = GET_TRUE_PARAMS(L_EDGE_TYPE, A_EDGE_TYPE, Y_EDGE_TYPE)
 
 def main():
     ''' evaluate true network causal effects '''
-    # _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE, MAX_NEIGHBORS)
-    # causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, 
-    #                                              burn_in=BURN_IN, 
-    #                                              n_simulations=int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT),
-    #                                              gibbs_select_every=GIBBS_SELECT_EVERY)
-    causal_effect_true = 0
-    print("True causal effect:", causal_effect_true)
+    _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, AVG_DEGREE, MAX_NEIGHBORS)
+    causal_effect_true = true_causal_effects_U_B(network_adj_mat, L_TRUE, Y_TRUE, 
+                                                 burn_in=BURN_IN, 
+                                                 n_simulations=int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT),
+                                                 gibbs_select_every=GIBBS_SELECT_EVERY)
     
     ''' using autog to estimate causal effects from data generated from UBB '''
     causal_effect_ests = {}

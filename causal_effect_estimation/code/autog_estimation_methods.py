@@ -1,10 +1,8 @@
 import numpy as np
-import pandas as pd
 from scipy.special import expit
 
 import sys
 sys.path.append("../../")
-from infrastructure.network_utils import kth_order_neighborhood
 
 def npll_L(params, L, network_adj_mat):
     '''
@@ -155,4 +153,3 @@ def estimate_causal_effects_U_U(network_adj_mat, A_value, params_L, params_Y,
             matrix_Ys.append(Y.copy())
 
     return np.mean(matrix_Ys)
-

@@ -22,12 +22,10 @@ def parallel_helper(n_units):
   
 def main():
     ''' evaluate true network causal effects '''
-    # _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
-    #                                            AVG_DEGREE, MAX_NEIGHBORS)
-    # causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, 
-    #                                         int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT))
-    causal_effect_true = 0
-    print("True causal effect:", causal_effect_true)
+    _, network_adj_mat = create_random_network(TRUE_CAUSAL_EFFECT_N_UNIT, 
+                                               AVG_DEGREE, MAX_NEIGHBORS)
+    causal_effect_true = causal_effects_B_U(network_adj_mat, L_TRUE, Y_TRUE, BURN_IN, 
+                                            int(N_SIM_MULTIPLIER*TRUE_CAUSAL_EFFECT_N_UNIT))
     
     ''' using autog to estimate causal effects from data generated from BBU '''
     causal_effect_ests = {}

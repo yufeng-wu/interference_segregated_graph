@@ -24,8 +24,6 @@ def main():
                                             gibbs_select_every=GIBBS_SELECT_EVERY)
     causal_effect_true = Y_A1_true - Y_A0_true
     
-    print("True causal effect:", causal_effect_true)
-    
     ''' using autog to estimate causal effects from data generated from UBU '''
     causal_effect_ests = {}
     with ProcessPoolExecutor() as executor:

@@ -6,27 +6,21 @@ set up: L layer is bidirected, A layer is undirected, and Y layer is undirected.
 '''
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
-filename = "BUU"
+filename = "BUU" # edit this to the filename of the data you want to visualize
 fontsize = 14
 
-# Read data from CSV files
 df_ours = pd.read_csv(f'../result/raw_output/{filename}_ours.csv')
 df_autog = pd.read_csv(f'../result/raw_output/{filename}_autog.csv')
 
-# Define colors for the boxplots
 ours_color = "skyblue"
 autog_color = "lightgreen"
 
 # Get the sample sizes from the column names
 n_samples = [int(column_name.split()[2]) for column_name in df_ours.columns if 'n units' in column_name]
 
-# Create subplots
 fig, axs = plt.subplots(1, 2, figsize=(15, 6), sharey=True)
-
-# Set titles for subplots
 axs[0].set_title(f'Our Method Estimates {filename}', fontsize=fontsize)
 axs[1].set_title(f'Auto-G Estimates {filename}', fontsize=fontsize)
 
@@ -59,9 +53,6 @@ max_ylim = max_y_value + padding
 axs[0].set_ylim(min_ylim, max_ylim)
 axs[1].set_ylim(min_ylim, max_ylim)
 
-# Set font size for all texts in the plots
 plt.rcParams.update({'font.size': fontsize})
-
 plt.tight_layout()
-# Save the figure
 plt.savefig(f'../result/plot/{filename}.png')
