@@ -1,2 +1,0 @@
-true_model,data_source,network_size,effective_sample_size,test_bootstrap_iters,ML_model_name,tuning_param_grid,L_lower,L_upper,L_result,Y_lower,Y_upper,Y_result
-BBU,../data/binary_sample/,200000,6000,300,LogisticRegression,"{'C': [0.001, 0.01, 0.1, 1], 'penalty': ['l1', 'l2'], 'solver': ['liblinear']}",0.010000000000000009,0.011666666666666714,B,-0.02416666666666667,0.013770833333333352,U
