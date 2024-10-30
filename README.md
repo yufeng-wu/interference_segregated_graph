@@ -53,5 +53,5 @@ for verifying the correctness of our estimation strategies as well as demonstrat
 -   `network_utils.py`: methods for creating random networks and process these graphs (e.g. finding the kth-order neighborhood of a node). 
 
 `network_six_degree_separation_experiment/`: directory that contains data and experimentation code to test how large of six degree separated sets we can find in various real social networks. 
--   `data/`: folder containing network data downloaded from SNAP website at https://snap.stanford.edu/data/index.html#socnets
+-   `data/`: folder containing network data downloaded from https://snap.stanford.edu/data/index.html#socnets
 -   `experiment.ipynb`: notebook to run this set of experiments. 
