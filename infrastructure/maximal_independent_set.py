@@ -20,6 +20,7 @@ def get_vertices_within_n_layers(graph, start_vertex, n):
 
     return visited
 
+# Note: in our paper, we called it an n+1 degree separated set. 
 def maximal_n_hop_independent_set(network_dict, n, verbose=False):
     """
     Find an n-apart independent set in the graph.

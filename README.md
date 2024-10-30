@@ -1,7 +1,13 @@
-## Causal Inference With Contagion and Latent Homophily Under Full Interference
-### Williams College Computer Science Thesis
+## Network Causal Effect Estimation In Graphical Models Of Contagion And Latent Confounding
 
-Authors: Yufeng Wu, Rohit Bhattacharya
+Yufeng Wu, Rohit Bhattacharya
+
+Department of Computer Science, Williams College
+
+Contacts: sw20@williams.edu, rb17@williams.edu
+
+This repo contains the implementation and experimentation code for the paper titled "Network Causal Effect Estimation In Graphical Models Of Contagion
+And Latent Confounding."
 
 ---
 
@@ -22,45 +28,31 @@ for verifying the correctness of our estimation strategies as well as demonstrat
 - `result/`
     - `raw_output/`: raw outputs in csv format from running `{XYZ}_ours.py` and `{XYZ}_autog.py`.
     - `plot`: visualizations of the csv files in `raw_output/`, produced by `visualizer.py`.
-    - `raw_output_used_in_thesis/`: raw outputs in csv format from running `{XYZ}_ours.py` and `{XYZ}_autog.py` that are eventually used in my thesis. 
-    - `plot_used_in_thesis/`: visualizations of the csv files in `raw_output_used_in_thesis/`. 
 
-<<<<<<< HEAD
-`contagion_vs_latent_homophily_test/`: directory that contains code, data, and results for verifying the correctness of our proposed independence tests that distinguishes contagion (represented by an undirected edge, -) and latent homophily (represented by a bidirected edge, <->) across the L, A, and Y layers of the graphical model.
+`contagion_vs_latent_confounding_test/`: directory that contains code, data, and results for verifying the correctness of our proposed independence tests that distinguishes contagion (represented by an undirected edge, -) and latent confounding (represented by a bidirected edge, <->) across the L, A, and Y layers of the partially determined segregated graph.
 - `data/binary_sample/`: 
     - `network.pkl`: a network in pickle format created by `data_generator_LRT.py`.
-    - `5_ind_set.csv`: a maximal 5-hop independent set of the network saved in `network.pkl`. This file is generated from `data_generator_LRT.py`.
+    - `5_ind_set.csv`: a maximal 5-hop independent set (we used the term 6-degree separated set in our paper) of the network saved in `network.pkl`. This file is generated from `data_generator_LRT.py`.
     - `BBB_sample.csv`: a dataframe generated using the underlying network in `network.pkl` where all layers (L, A, and Y) are connected by bidirected edges. This file is generated from `data_generator_LRT.py`.
     - `UUU_sample`: a dataframe generated using the underlying network in `network.pkl` where all layers (L, A, and Y) are connected by undirected edges. This file is generated from `data_generator_LRT.py`.
-- `data_generator_LRT.py`: code that generates data for our likelihood ratio test. All files generated from this code are then saved to `data/binary_sample/` (when I run this code for my thesis, I simply dragged and dropped the outputs into `data/binary_sample/). 
-- `likelihood_ratio_test.py`: code to run our likelihood ratio tests for each layer (L, A, and Y) to determine the presence of contagion (null hypothesis) vs. latent homophily (alternative hypothesis). Outputs are saved in `result/`.
+- `data_generator_LRT.py`: code that generates data for our likelihood ratio test. All files generated from this code are then saved to `data/binary_sample/`. 
+- `likelihood_ratio_test.py`: code to run our likelihood ratio tests for each layer (L, A, and Y) to determine the presence of contagion (null hypothesis) vs. latent confounding (alternative hypothesis). Outputs are saved in `contagion_vs_latent_confounding_test/result/`.
+- `likelihood_ratio_test_layer_only.py`: almost the same as `likelihood_ratio_test.py` but with small modifications of the conditioning set in the tests. This version is what our paper eventually used. Both are correct LRTs to distinguish between undirected and bidirected edges, but this version is easier to present. 
 - `visualizer.py`: visualize the csv files in `result/` and save the plot to `result/plot/`.
 - `result/`
     - `L_results.csv`: results from `likelihood_ratio_test.py` for the L layer.
     - `A_results.csv`: results from `likelihood_ratio_test.py` for the A layer.
     - `Y_results.csv`: results from `likelihood_ratio_test.py` for the Y layer.
+    - `L_results_layer_only.csv`: results from `likelihood_ratio_test_layer_only.py` for the L layer.
+    - `A_results_layer_only.csv`: results from `likelihood_ratio_test_layer_only.py` for the A layer.
+    - `Y_results_layer_only.csv`: results from `likelihood_ratio_test_layer_only.py` for the Y layer.
     - `plot/`: folder to save the visualizations of the three csv files in `result/`. 
-=======
-`contagion_vs_latent_confounding_test/`: directory that contains code, data, and results for verifying the correctness of our proposed independence tests that distinguishes contagion (represented by an undirected edge, -) and latent confounding (represented by a bidirected edge, <->) across the L, A, and Y layers of the graphical model.
->>>>>>> e6283f2daa6728ccc25d9327e2e5f312fb0f81a5
 
-`infrastructure/`: directory that contains the utility code that is shared by code in `causal_effect_estimation/` and `contagion_vs_latent_confounding_test/`.
--   `data_generator.py`: methods for generating network realizations.
--   `maximal_independence_set.py`: methods for finding n-hop maximal independence sets from a network. 
+`infrastructure/`: directory that contains the utility code that is used by programs in `causal_effect_estimation/` or `contagion_vs_latent_confounding_test/`.
+-   `data_generator.py`: methods for generating network realizations. Used by programs in `causal_effect_estimation/`.
+-   `maximal_independence_set.py`: methods for finding n-hop maximal independence sets from a network (note: we called them n+1 degree separated sets in our paper).
 -   `network_utils.py`: methods for creating random networks and process these graphs (e.g. finding the kth-order neighborhood of a node). 
-<<<<<<< HEAD
 
-`scratch/`: directory that contains some python code and jupyter notebooks that I used for quick experiments. Code in this directory are not used in simulation studies. 
-
-### Required Packages
-
-TODO
-
-### Replication
-Follow the steps below to replicate our results:
-1. install required packages
-2. run `contagion_vs_latent_homophily_test/contagiondata_generator_LRT.py` and put the outputs in `contagion_vs_latent_homophily_test/data/binary_sample/`. 
-3. run `contagion_vs_latent_homophily_test/likleihood_ratio_test.py` to replicate results for our hypothesis tests.
-4. run `causal_effect_estimation/run_all_experiments.py` to replicate results for the causal effect estimation part of the simulation studies. 
-=======
->>>>>>> e6283f2daa6728ccc25d9327e2e5f312fb0f81a5
+`network_six_degree_separation_experiment/`: directory that contains data and experimentation code to test how large of six degree separated sets we can find in various real social networks. 
+-   `data/`: folder containing network data downloaded from SNAP website at https://snap.stanford.edu/data/index.html#socnets
+-   `experiment.ipynb`: notebook to run this set of experiments. 

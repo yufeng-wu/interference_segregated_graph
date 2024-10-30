@@ -42,18 +42,6 @@ def create_random_network(n, avg_degree, max_degree):
     network_adj_matrix = nx.adjacency_matrix(g).toarray()
     return nx.to_dict_of_lists(g), network_adj_matrix
 
-# def create_random_network(n, min_neighbors, max_neighbors):
-#     while True:
-#         degree_sequence = [random.randint(min_neighbors, max_neighbors) for _ in range(n)]
-#         if sum(degree_sequence) % 2 == 0:
-#             break
-#     g = nx.configuration_model(degree_sequence)
-#     g = nx.Graph(g)
-#     g.remove_edges_from(nx.selfloop_edges(g))
-#     adj_matrix = nx.adjacency_matrix(g).toarray()
-
-#     return nx.to_dict_of_lists(g), adj_matrix
-
 def create_cycle_graph(n):
     '''
     Create a cycle graph with n vertices.
