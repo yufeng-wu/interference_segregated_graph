@@ -1,11 +1,5 @@
 ## Network Causal Effect Estimation In Graphical Models Of Contagion And Latent Confounding
 
-Yufeng Wu, Rohit Bhattacharya
-
-Department of Computer Science, Williams College
-
-Contacts: sw20@williams.edu, rb17@williams.edu
-
 This repo contains the experimentation code for our paper "Network Causal Effect Estimation In Graphical Models Of Contagion And Latent Confounding."
 
 ---
