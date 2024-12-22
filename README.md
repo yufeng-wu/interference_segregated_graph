@@ -22,7 +22,7 @@ for verifying the correctness of our estimation strategies as well as demonstrat
     - `raw_output/`: raw outputs in csv format from running `{XYZ}_ours.py` and `{XYZ}_autog.py`.
     - `plot`: visualizations of the csv files in `raw_output/`, produced by `visualizer.py`.
 
-`contagion_vs_latent_confounding_test/`: directory that contains code, data, and results for verifying the correctness of our proposed independence tests that distinguishes contagion (represented by an undirected edge, -) and latent confounding (represented by a bidirected edge, <->) across the L, A, and Y layers of the partially determined segregated graph.
+`contagion_vs_latent_confounding_test(synthetic)/`: directory that contains code, data, and results for verifying the correctness of our proposed independence tests that distinguishes contagion (represented by an undirected edge, -) and latent confounding (represented by a bidirected edge, <->) across the L, A, and Y layers of the partially determined segregated graph. Fully synthetic version.
 - `data/binary_sample/`: 
     - `network.pkl`: a network in pickle format created by `data_generator_LRT.py`.
     - `5_ind_set.csv`: a maximal 5-hop independent set (we used the term 6-degree separated set in our paper) of the network saved in `network.pkl`. This file is generated from `data_generator_LRT.py`.
@@ -40,6 +40,14 @@ for verifying the correctness of our estimation strategies as well as demonstrat
     - `A_results_layer_only.csv`: results from `likelihood_ratio_test_layer_only.py` for the A layer.
     - `Y_results_layer_only.csv`: results from `likelihood_ratio_test_layer_only.py` for the Y layer.
     - `plot/`: folder to save the visualizations of the three csv files in `result/`. 
+
+`contagion_vs_latent_confounding_test(semi-synthetic)/`: directory for verifying the likelihood ratio test using semi-synthetic data (i.e., the network are real networks but the data are generated using our own DGP).
+- `raw_data/`: raw data downloaded from SNAP.
+    - `RO_edges.csv`: Deezer RO
+    - `musae_git_edges.csv`: GitHub Social Networkk
+    - `artist_edges.csv`: GEMSEC FB Artists
+- `intermediate_data/`: processed raw data, organized into different subfolders. Includes a dictionary version of the original network, a 6-degree separated set, a dataset when three layers are all bidirected, and another dataset when three layers are all undirected.
+- `result/`: result of the likelihood ratio tests, organized into different subfolders. 
 
 `infrastructure/`: directory that contains the utility code that is used by programs in `causal_effect_estimation/` or `contagion_vs_latent_confounding_test/`.
 -   `data_generator.py`: methods for generating network realizations. Used by programs in `causal_effect_estimation/`.
