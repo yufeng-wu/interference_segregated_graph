@@ -87,7 +87,7 @@ plt.tight_layout(rect=[0, 0.08, 1, 0.93])
 
 # Save with extra padding to avoid clipping
 plt.savefig(
-    "./result/plot/LAY_comparison_improved.png",
+    "./result/plot/LAY_comparison_semi_synthetic.png",
     dpi=300,
     bbox_inches="tight",
     pad_inches=0.5

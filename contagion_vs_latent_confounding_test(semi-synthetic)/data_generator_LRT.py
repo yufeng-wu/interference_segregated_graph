@@ -161,8 +161,10 @@ def sample_given_boundary_binary(boundary_values):
 
 def main():
     
-    NETWORK_NAME = "HU_edges" #"HR_edges" # "RO_edges"  
-    burn_in = 200 
+    # NETWORK_NAME = "HR_edges" 
+    NETWORK_NAME = "HU_edges" 
+    # NETWORK_NAME = "RO_edges"  
+    burn_in = 500 
     
     # load real-life social network and process it into a dictionary
     network = pd.read_csv(f"./raw_data/{NETWORK_NAME}.csv")

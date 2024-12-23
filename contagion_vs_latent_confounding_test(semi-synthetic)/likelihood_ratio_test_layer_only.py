@@ -62,18 +62,8 @@ def likelihood_ratio_test(data, Y, Z_set=[], cond_set=[], Y_type="continuous"):
 
     return p_value
 
-def prepare_test_df(sample, network_dict, ind_set_5_hop, get_row):
-    '''
-    This method is different that from the synthetic data version because 
-    in the synthetic version, the ith unit's data is exactly at the ith row of 
-    the dataset. 
-    
-    However, in the semi-synthetic version (this version), the units in the data 
-    is not ordered. 
-    
-    get_row is a dictionary that maps the unit index to the row index
-    of the sample dataframe. 
-    '''
+def prepare_test_df(sample, network_dict, ind_set_5_hop):
+    unit_ids = []
     
     L_vals = []
     L_1nb_vals = []
@@ -89,34 +79,34 @@ def prepare_test_df(sample, network_dict, ind_set_5_hop, get_row):
     Y_1nb_vals = []
     Y_2nb_vals = []
 
-    for i in ind_set_5_hop: # i refers to the index of the unit
-        if not network_dict[i]: 
-            # skip nodes with no neighbors
-            continue
-        
-        # Extract values for the current unit
-        L_vals.append(sample.iloc[get_row[i]]['L'])
-        A_vals.append(sample.iloc[get_row[i]]['A'])
-        Y_vals.append(sample.iloc[get_row[i]]['Y'])
-        
-        # get the neighbors of the current unit
+    for i in ind_set_5_hop:
         neighbors = network_dict[i]
         second_order_nbs = kth_order_neighborhood(network_dict, i, 2)
         third_order_nbs = kth_order_neighborhood(network_dict, i, 3)
-
-        # Append values for neighbors if they exist in the sample
-        L_1nb_vals.append([sample.iloc[get_row[j]]['L'] for j in neighbors])
-        L_2nb_vals.append([sample.iloc[get_row[j]]['L'] for j in second_order_nbs])
-        L_3nb_vals.append([sample.iloc[get_row[j]]['L'] for j in third_order_nbs])
-
-        A_1nb_vals.append([sample.iloc[get_row[j]]['A'] for j in neighbors])
-        A_2nb_vals.append([sample.iloc[get_row[j]]['A'] for j in second_order_nbs])
-        A_3nb_vals.append([sample.iloc[get_row[j]]['A'] for j in third_order_nbs])
-
-        Y_1nb_vals.append([sample.iloc[get_row[j]]['Y'] for j in neighbors])
-        Y_2nb_vals.append([sample.iloc[get_row[j]]['Y'] for j in second_order_nbs])
+        
+        # skip the unit if its neighbors or second order neighbors are empty
+        # because our test requires at least one neighbor and one second order neighbor
+        if not neighbors or not second_order_nbs:
+            continue
+        
+        unit_ids.append(i)
+        
+        L_vals.append(sample['L'][i])
+        L_1nb_vals.append([sample['L'][j] for j in neighbors])
+        L_2nb_vals.append([sample['L'][j] for j in second_order_nbs])
+        L_3nb_vals.append([sample['L'][j] for j in third_order_nbs])
+        
+        A_vals.append(sample['A'][i])
+        A_1nb_vals.append([sample['A'][j] for j in neighbors])
+        A_2nb_vals.append([sample['A'][j] for j in second_order_nbs])
+        A_3nb_vals.append([sample['A'][j] for j in third_order_nbs])
+        
+        Y_vals.append(sample['Y'][i])
+        Y_1nb_vals.append([sample['Y'][j] for j in neighbors])
+        Y_2nb_vals.append([sample['Y'][j] for j in second_order_nbs])
 
     df = pd.DataFrame({
+        'unit_id': unit_ids,
         'L': L_vals,
         'L_1nb_sum': [sum(ls) for ls in L_1nb_vals],
         'L_2nb_sum': [sum(ls) for ls in L_2nb_vals],
@@ -135,7 +125,12 @@ def prepare_test_df(sample, network_dict, ind_set_5_hop, get_row):
 if __name__ == "__main__":
     # set up 
     NETWORK_NAME = "HR_edges" 
-    n_trials = 100 # number of trials to run for each n_units
+    # NETWORK_NAME = "HU_edges" 
+    # NETWORK_NAME = "RO_edges"  
+    
+    print("--- NETWORK_NAME --- :", NETWORK_NAME)
+    
+    n_trials = 200 # number of trials to run for each n_units
     sys.setrecursionlimit(4000) # set a new recursion limit
     
     # load the data
@@ -153,15 +148,21 @@ if __name__ == "__main__":
     A_results = pd.DataFrame(columns=["n_units", "type_I_error_rate", "power"])
     Y_results = pd.DataFrame(columns=["n_units", "type_I_error_rate", "power"])
     
-    # the Unnamed: 0 column is the index of the unit
+    # the Unnamed: 0 column is the index of the unit;
+    # make sure that the unit_index in the network is the same as the row 
+    # number in the sample dataframes.
     BBB_sample.rename(columns={'Unnamed: 0': 'unit_index'}, inplace=True)
     UUU_sample.rename(columns={'Unnamed: 0': 'unit_index'}, inplace=True)
+    BBB_sample = BBB_sample.sort_values(by='unit_index').reset_index(drop=True)
+    UUU_sample = UUU_sample.sort_values(by='unit_index').reset_index(drop=True)
+    BBB_sample.drop(columns=['unit_index'], inplace=True)
+    UUU_sample.drop(columns=['unit_index'], inplace=True)
     
-    # prepare mapping between the index of the unit and the row index in the UUU and BBB samples
-    # this is needed because the UUU and BBB samples are not ordered by the unit index.
-    # this preparetion is for faster processing in later code. 
-    BBB_unit_index_to_row_index = {row['unit_index']: idx for idx, row in BBB_sample.iterrows()}
-    UUU_unit_index_to_row_index = {row['unit_index']: idx for idx, row in UUU_sample.iterrows()}
+    # prepare test dataframes given ind_set_full;
+    # later when running each trial, we will randomly sample n_units from ind_set_full
+    # and extract these rows from the 'full' test dataframes.
+    BBB_test_df_full = prepare_test_df(BBB_sample, network_dict, ind_set_full)
+    UUU_test_df_full = prepare_test_df(UUU_sample, network_dict, ind_set_full)
     
     for n_units in n_units_list:
         # a list of True/False indicating whether the test correctly concludes
@@ -184,8 +185,13 @@ if __name__ == "__main__":
             print(f"n_units: {n_units}, trial: {i}")
             ind_set_5_hop = random.sample(ind_set_full, n_units)
             
-            BBB_test_df = prepare_test_df(BBB_sample, network_dict, ind_set_5_hop, BBB_unit_index_to_row_index)
-            UUU_test_df = prepare_test_df(UUU_sample, network_dict, ind_set_5_hop, UUU_unit_index_to_row_index)
+            # extract the rows from the full test dataframes
+            BBB_test_df = BBB_test_df_full[BBB_test_df_full['unit_id'].isin(ind_set_5_hop)].copy()
+            UUU_test_df = UUU_test_df_full[UUU_test_df_full['unit_id'].isin(ind_set_5_hop)].copy()
+            
+            # drop the unit_id column because it's unused for the test
+            BBB_test_df.drop(columns=['unit_id'], inplace=True)
+            UUU_test_df.drop(columns=['unit_id'], inplace=True)
             
             # p-value of L layer test when the true model have bidirected edges (<->)
             p_value_L_biedge = likelihood_ratio_test(data=BBB_test_df, 
