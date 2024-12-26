@@ -17,6 +17,7 @@ from scipy.special import expit
 import numpy as np
 import pandas as pd
 import pickle
+import math 
 
 def sample_biedge_layer(network_dict, sample, layer, U_dist, f):
     '''
@@ -62,7 +63,7 @@ def sample_biedge_layer(network_dict, sample, layer, U_dist, f):
 
     return data
 
-def sample_unedge_layer(network_dict, sample, layer, sample_given_boundary, verbose=False, burn_in=1000):
+def sample_unedge_layer(network_dict, sample, layer, sample_given_boundary, gibbs_param, verbose=False, burn_in=1000):
     '''
     Function to sample from an undirected graph.
 
@@ -71,6 +72,7 @@ def sample_unedge_layer(network_dict, sample, layer, sample_given_boundary, verb
         - sample (DataFrame): DataFrame containing the current samples of each node for previous (as defined by topological ordering) layers.
         - layer (str): The layer ('L', 'A', 'Y') currently being sampled.
         - prob_v_given_boundary (callable): Function to calculate the conditional probability of a node given its neighbors.
+        - gibbs_param: parameter used in udedge data generation, calculated based on max degree of the network.
         - verbose (bool): Flag for printing progress messages.
         - burn_in (int): Number of iterations for the Gibbs sampling 'burn-in' period.
 
@@ -83,7 +85,8 @@ def sample_unedge_layer(network_dict, sample, layer, sample_given_boundary, verb
 
     for i in range(burn_in):
         if verbose:
-            print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
+            if i % 20 == 0:
+                print("[PROGRESS] Sample from UG burning in:", i, "/", burn_in)
         for subject in network_dict.keys():
             boundary_values = {
                 'L_self': None,
@@ -108,7 +111,7 @@ def sample_unedge_layer(network_dict, sample, layer, sample_given_boundary, verb
                 boundary_values['A_neighbors'] = [sample.loc[neighbor, 'A'] for neighbor in network_dict[subject]]
                 boundary_values['Y_neighbors'] = [current_layer[neighbor] for neighbor in network_dict[subject]]
 
-            current_layer[subject] = sample_given_boundary(boundary_values)
+            current_layer[subject] = sample_given_boundary(boundary_values, gibbs_param)
 
     return current_layer # return the sampled data for THE SPECIFIED LAYER
 
@@ -135,18 +138,19 @@ def f_binary(pa_values):
 def U_dist():
     return np.random.normal(0, 1)
 
-def sample_given_boundary_binary(boundary_values):
+def sample_given_boundary_binary(boundary_values, param):
     ''' 
     Note: This can't be any random function. 
           See Lauritzen chain graph paper page 342.
     '''
+
     weighted_sum = 0
     weights = {
-        'Y_neighbors': -0.1, # this need to be controlled
+        'Y_neighbors': param, # this need to be controlled; need to ensure positive definiteness; 
         'L_self': 0.8,
-        'A_self': 1.7,
-        'L_neighbors': -0.1, # this need to be controlled
-        'A_neighbors': -0.1 # this need to be controlled
+        'A_self': 0.5,
+        'L_neighbors': param, # this need to be controlled
+        'A_neighbors': param # this need to be controlled
     }
     
     for key, values in boundary_values.items():
@@ -160,16 +164,20 @@ def sample_given_boundary_binary(boundary_values):
     return int(np.random.uniform() < p)
 
 def main():
+    # set random seed
+    np.random.seed(42)
     
     # NETWORK_NAME = "HR_edges" 
     NETWORK_NAME = "HU_edges" 
     # NETWORK_NAME = "RO_edges"  
-    burn_in = 500 
+    print(f"Generating data for {NETWORK_NAME} network")
+    
+    burn_in = 2000 
     
     # load real-life social network and process it into a dictionary
     network = pd.read_csv(f"./raw_data/{NETWORK_NAME}.csv")
     network_dict = {}
-    for index, row in network.iterrows():
+    for _, row in network.iterrows():
         network_dict.setdefault(row['node_1'], []).append(row['node_2'])
         network_dict.setdefault(row['node_2'], []).append(row['node_1'])
     
@@ -188,24 +196,33 @@ def main():
     
     pd.DataFrame(list(max_ind_set), columns=["subject"]).to_csv(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_5_ind_set.csv", index=False)
     
+    max_degree = max(len(neighbors) for neighbors in network_dict.values())
+    def round_down_to_decimal(value, decimals):
+        factor = 10 ** decimals
+        return math.floor(value * factor) / factor
+    gibbs_param = -round_down_to_decimal(1 / (max_degree), 8)
+    
     # sample from the UUU model
     UUU_sample = pd.DataFrame(index=network_dict.keys(), columns=['L', 'A', 'Y'])
     UUU_sample['L'] = sample_unedge_layer(network_dict=network_dict,
                                       sample=UUU_sample,
                                       layer='L',
                                       sample_given_boundary=sample_given_boundary_binary,
+                                      gibbs_param=gibbs_param,
                                       verbose=True,
                                       burn_in=burn_in)
     UUU_sample['A'] = sample_unedge_layer(network_dict=network_dict,
                                       sample=UUU_sample,
                                       layer='A',
                                       sample_given_boundary=sample_given_boundary_binary,
+                                      gibbs_param=gibbs_param,
                                       verbose=True,
                                       burn_in=burn_in)
     UUU_sample['Y'] = sample_unedge_layer(network_dict=network_dict,
                                       sample=UUU_sample,
                                       layer='Y',
                                       sample_given_boundary=sample_given_boundary_binary,
+                                      gibbs_param=gibbs_param,
                                       verbose=True,
                                       burn_in=burn_in)   
     

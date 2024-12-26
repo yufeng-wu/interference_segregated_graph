@@ -123,14 +123,17 @@ def prepare_test_df(sample, network_dict, ind_set_5_hop):
     return df
 
 if __name__ == "__main__":
+    # set random seed
+    np.random.seed(42)
+    
     # set up 
-    NETWORK_NAME = "HR_edges" 
-    # NETWORK_NAME = "HU_edges" 
+    # NETWORK_NAME = "HR_edges" 
+    NETWORK_NAME = "HU_edges" 
     # NETWORK_NAME = "RO_edges"  
     
     print("--- NETWORK_NAME --- :", NETWORK_NAME)
     
-    n_trials = 200 # number of trials to run for each n_units
+    n_trials = 100 # number of trials to run for each n_units
     sys.setrecursionlimit(4000) # set a new recursion limit
     
     # load the data
@@ -141,7 +144,7 @@ if __name__ == "__main__":
     ind_set_full = pd.read_csv(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_5_ind_set.csv")['subject'].tolist()
     
     # set n_units_list based on the size of ind_set_full 
-    n_units_list = [i for i in range(100, len(ind_set_full) + 1, 100)] # start; end; step;
+    n_units_list = [i for i in range(100, len(ind_set_full), 100)] # start; end; step;
     
     # initialize dataframes to store type I error rates and power
     L_results = pd.DataFrame(columns=["n_units", "type_I_error_rate", "power"])
@@ -192,6 +195,45 @@ if __name__ == "__main__":
             # drop the unit_id column because it's unused for the test
             BBB_test_df.drop(columns=['unit_id'], inplace=True)
             UUU_test_df.drop(columns=['unit_id'], inplace=True)
+            
+            # p-value of L layer test when the true model have bidirected edges (<->)
+            # p_value_L_biedge = likelihood_ratio_test(data=BBB_test_df, 
+            #                                          Y="L", 
+            #                                          Z_set=["L_2nb_sum"], 
+            #                                          cond_set=["L_1nb_sum"],
+            #                                          Y_type="binary")
+            # # p-value of L layer test when the true model have undirected edges (-)
+            # p_value_L_udedge = likelihood_ratio_test(data=UUU_test_df, 
+            #                                          Y="L", 
+            #                                          Z_set=["L_2nb_sum"], 
+            #                                          cond_set=["L_1nb_sum"],
+            #                                          Y_type="binary")
+            
+            # # p-value of A layer test when the true model have bidirected edges (<->)
+            # p_value_A_biedge = likelihood_ratio_test(data=BBB_test_df, 
+            #                                          Y="A", 
+            #                                          Z_set=["L_3nb_sum", "A_2nb_sum"], 
+            #                                          cond_set=["A_1nb_sum", "L", "L_1nb_sum", "L_2nb_sum"],
+            #                                          Y_type="binary")
+            # # p-value of A layer test when the true model have undirected edges (-)
+            # p_value_A_udedge = likelihood_ratio_test(data=UUU_test_df, 
+            #                                          Y="A", 
+            #                                          Z_set=["L_3nb_sum", "A_2nb_sum"], 
+            #                                          cond_set=["A_1nb_sum", "L", "L_1nb_sum", "L_2nb_sum"],
+            #                                          Y_type="binary")
+            
+            # # p-value of Y layer test when the true model have bidirected edges (<->)
+            # p_value_Y_biedge = likelihood_ratio_test(data=BBB_test_df, 
+            #                                          Y="Y", 
+            #                                          Z_set=["L_3nb_sum", "A_3nb_sum", "Y_2nb_sum"], 
+            #                                          cond_set=["L", "L_1nb_sum", "L_2nb_sum", "A", "A_1nb_sum", "A_2nb_sum", "Y_1nb_sum"],
+            #                                          Y_type="binary")
+            # # p-value of Y layer test when the true model have undirected edges (-)
+            # p_value_Y_udedge = likelihood_ratio_test(data=UUU_test_df, 
+            #                                          Y="Y", 
+            #                                          Z_set=["L_3nb_sum", "A_3nb_sum", "Y_2nb_sum"], 
+            #                                          cond_set=["L", "L_1nb_sum", "L_2nb_sum", "A", "A_1nb_sum", "A_2nb_sum", "Y_1nb_sum"],
+            #                                          Y_type="binary")
             
             # p-value of L layer test when the true model have bidirected edges (<->)
             p_value_L_biedge = likelihood_ratio_test(data=BBB_test_df, 
