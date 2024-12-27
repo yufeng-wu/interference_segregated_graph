@@ -4,14 +4,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Networks and Tests
-NETWORK_NAMES = ["HR_edges", "HU_edges", "RO_edges"]
+NETWORK_NAMES = ["HR_edges", "HU_edges", "RO_edges", "deezer_europe_edges", "lastfm_asia_edges"]
 TEST_NAMES = ["L", "A", "Y"]
 
 # Colors for each network
 color_map = {
     "HR_edges": "blue",
     "HU_edges": "green",
-    "RO_edges": "purple"
+    "RO_edges": "purple",
+    "deezer_europe_edges": "orange",
+    "lastfm_asia_edges": "red"
 }
 
 # Line styles for metrics

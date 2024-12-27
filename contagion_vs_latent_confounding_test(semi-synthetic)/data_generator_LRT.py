@@ -170,9 +170,11 @@ def main():
     # NETWORK_NAME = "HR_edges" 
     NETWORK_NAME = "HU_edges" 
     # NETWORK_NAME = "RO_edges"  
+    # NETWORK_NAME = "deezer_europe_edges"
+    # NETWORK_NAME = "lastfm_asia_edges"
     print(f"Generating data for {NETWORK_NAME} network")
     
-    burn_in = 2000 
+    burn_in = 1000 
     
     # load real-life social network and process it into a dictionary
     network = pd.read_csv(f"./raw_data/{NETWORK_NAME}.csv")
@@ -187,14 +189,14 @@ def main():
         pickle.dump(network_dict, file) 
         
     # find 20 maximal 5-hop independent sets and save the largest one
-    for i in range(20):
-        ind_set = maximal_n_hop_independent_set(network_dict, n=5, verbose=False) 
-        if i == 0:
-            max_ind_set = ind_set
-        elif len(ind_set) > len(max_ind_set):
-            max_ind_set = ind_set
+    # for i in range(20):
+    #     ind_set = maximal_n_hop_independent_set(network_dict, n=5, verbose=False) 
+    #     if i == 0:
+    #         max_ind_set = ind_set
+    #     elif len(ind_set) > len(max_ind_set):
+    #         max_ind_set = ind_set
     
-    pd.DataFrame(list(max_ind_set), columns=["subject"]).to_csv(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_5_ind_set.csv", index=False)
+    # pd.DataFrame(list(max_ind_set), columns=["subject"]).to_csv(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_5_ind_set.csv", index=False)
     
     max_degree = max(len(neighbors) for neighbors in network_dict.values())
     def round_down_to_decimal(value, decimals):
