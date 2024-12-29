@@ -80,7 +80,7 @@ for net in NETWORK_NAMES:
 # --------------------------------------------------------------------
 # Plotting
 # --------------------------------------------------------------------
-fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
+fig, axes = plt.subplots(1, 3, figsize=(15, 6), sharey=True)
 
 outcomes = ["L", "A", "Y"]
 markers = {"type_I_error": "o", "power": "x"}  # Different markers
@@ -202,7 +202,8 @@ fig.suptitle(
     fontsize=14
 )
 
-# Ensure there's enough space for the legends at the bottom
+# Ensure there's enough space for the title and the legends 
+plt.subplots_adjust(top=0.83) 
 plt.subplots_adjust(bottom=0.4)
 
 # Finally, save the figure
