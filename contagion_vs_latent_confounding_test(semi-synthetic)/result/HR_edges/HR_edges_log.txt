@@ -1,0 +1,3 @@
+n_trials: 500
+paper_LRT: True
+Average effective sample size: 300.21

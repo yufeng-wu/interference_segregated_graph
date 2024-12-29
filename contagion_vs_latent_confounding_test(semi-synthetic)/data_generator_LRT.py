@@ -164,11 +164,10 @@ def sample_given_boundary_binary(boundary_values, param):
     return int(np.random.uniform() < p)
 
 def main():
-    # set random seed
     np.random.seed(42)
     
-    # NETWORK_NAME = "HR_edges" 
-    NETWORK_NAME = "HU_edges" 
+    NETWORK_NAME = "HR_edges" 
+    # NETWORK_NAME = "HU_edges" 
     # NETWORK_NAME = "RO_edges"  
     # NETWORK_NAME = "deezer_europe_edges"
     # NETWORK_NAME = "lastfm_asia_edges"
@@ -183,20 +182,9 @@ def main():
         network_dict.setdefault(row['node_1'], []).append(row['node_2'])
         network_dict.setdefault(row['node_2'], []).append(row['node_1'])
     
-    # save the network_dict and a maximal 6-degree separated set 
-    # (aka. a maximal 5-hop independent set) ind_set to intermediate_data folder
+    # save the network_dict 
     with open(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_network.pkl", "wb") as file:
         pickle.dump(network_dict, file) 
-        
-    # find 20 maximal 5-hop independent sets and save the largest one
-    # for i in range(20):
-    #     ind_set = maximal_n_hop_independent_set(network_dict, n=5, verbose=False) 
-    #     if i == 0:
-    #         max_ind_set = ind_set
-    #     elif len(ind_set) > len(max_ind_set):
-    #         max_ind_set = ind_set
-    
-    # pd.DataFrame(list(max_ind_set), columns=["subject"]).to_csv(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_5_ind_set.csv", index=False)
     
     max_degree = max(len(neighbors) for neighbors in network_dict.values())
     def round_down_to_decimal(value, decimals):
@@ -253,5 +241,9 @@ def main():
     df = pd.DataFrame(BBB_sample)
     df.to_csv(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_BBB_sample.csv", index=True)
 
+    # save a log containing burn-in period
+    with open(f"./intermediate_data/{NETWORK_NAME}/{NETWORK_NAME}_burn_in.txt", "w") as file:
+        file.write(f"Burn-in period: {burn_in}")
+    
 if __name__ == "__main__":
     main()

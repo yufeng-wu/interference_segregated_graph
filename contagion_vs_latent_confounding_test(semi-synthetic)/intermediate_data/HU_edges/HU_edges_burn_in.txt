@@ -1,0 +1,1 @@
+Burn-in period: 1000
