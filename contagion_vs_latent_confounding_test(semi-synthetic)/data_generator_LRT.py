@@ -166,11 +166,11 @@ def sample_given_boundary_binary(boundary_values, param):
 def main():
     np.random.seed(42)
     
-    NETWORK_NAME = "HR_edges" 
+    # NETWORK_NAME = "HR_edges" 
     # NETWORK_NAME = "HU_edges" 
     # NETWORK_NAME = "RO_edges"  
     # NETWORK_NAME = "deezer_europe_edges"
-    # NETWORK_NAME = "lastfm_asia_edges"
+    NETWORK_NAME = "lastfm_asia_edges"
     print(f"Generating data for {NETWORK_NAME} network")
     
     burn_in = 1000 
@@ -187,6 +187,9 @@ def main():
         pickle.dump(network_dict, file) 
     
     max_degree = max(len(neighbors) for neighbors in network_dict.values())
+    # average_degree = sum(len(neighbors) for neighbors in network_dict.values()) / len(network_dict)
+    # print(f"Max degree: {max_degree}, Average degree: {average_degree}")
+    
     def round_down_to_decimal(value, decimals):
         factor = 10 ** decimals
         return math.floor(value * factor) / factor
